@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { 
   LayoutDashboard, Users, Calendar, Target, 
-  Menu, X, ChevronRight
+  Menu, X, ChevronRight, ClipboardCheck
 } from "lucide-react";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,6 +11,7 @@ const navigation = [
   { name: "Dashboard", href: "Dashboard", icon: LayoutDashboard },
   { name: "Clients", href: "Clients", icon: Users },
   { name: "Sessions", href: "Sessions", icon: Calendar },
+  { name: "Onboarding", href: "Onboarding", icon: ClipboardCheck },
   { name: "Pipeline", href: "Pipeline", icon: Target },
 ];
 
