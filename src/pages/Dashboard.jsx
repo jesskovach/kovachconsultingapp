@@ -2,7 +2,7 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Calendar, Target, TrendingUp, Plus, ArrowRight, Bell, CheckCircle2, Clock } from "lucide-react";
+import { Users, Calendar, Target, TrendingUp, Plus, ArrowRight, Bell, CheckCircle2, Clock, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -38,6 +38,17 @@ export default function Dashboard() {
   const { data: notifications = [] } = useQuery({
     queryKey: ["notifications"],
     queryFn: () => base44.entities.Notification.list("-created_date", 10)
+  });
+
+  const { data: allMessages = [] } = useQuery({
+    queryKey: ["allMessages"],
+    queryFn: () => base44.entities.Message.list("-created_date", 50),
+    refetchInterval: 10000
+  });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me()
   });
 
   const { data: onboardingChecklists = [] } = useQuery({
@@ -208,6 +219,52 @@ export default function Dashboard() {
               )}
             </div>
             </div>
+
+            {/* Unread Messages */}
+            {currentUser && allMessages.filter(m => !m.read && m.sender_email !== currentUser.email).length > 0 && (
+              <div className="bg-gradient-to-r from-violet-500 to-violet-600 rounded-xl p-6 text-white mb-8">
+                <div className="flex items-center gap-3 mb-3">
+                  <MessageSquare className="w-6 h-6" />
+                  <h2 className="text-lg font-semibold">Unread Messages</h2>
+                  <Badge className="bg-white/20 text-white">
+                    {allMessages.filter(m => !m.read && m.sender_email !== currentUser.email).length}
+                  </Badge>
+                </div>
+                <div className="space-y-3">
+                  {allMessages
+                    .filter(m => !m.read && m.sender_email !== currentUser.email)
+                    .slice(0, 3)
+                    .map((message, index) => {
+                      const client = clients.find(c => c.id === message.client_id);
+                      return (
+                        <motion.div
+                          key={message.id}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="bg-white/10 backdrop-blur-sm rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-colors"
+                          onClick={() => window.location.href = createPageUrl("ClientDetail") + `?id=${message.client_id}`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm mb-1">{message.sender_name}</p>
+                              <p className="text-sm text-white/90 line-clamp-2">{message.content}</p>
+                              <p className="text-xs text-white/70 mt-1">
+                                {format(new Date(message.created_date), "MMM d, h:mm a")}
+                              </p>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                </div>
+                {allMessages.filter(m => !m.read && m.sender_email !== currentUser.email).length > 3 && (
+                  <p className="text-sm text-white/80 mt-3">
+                    + {allMessages.filter(m => !m.read && m.sender_email !== currentUser.email).length - 3} more unread
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Recent Notifications */}
             <div>
