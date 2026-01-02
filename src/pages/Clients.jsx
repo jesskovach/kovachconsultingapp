@@ -216,7 +216,7 @@ export default function Clients() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  className="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-lg hover:border-slate-200 transition-all group"
+                  className="bg-white rounded-xl border border-slate-100 p-4 hover:shadow-lg hover:border-slate-200 transition-all group relative"
                 >
                   <Link to={createPageUrl("ClientDetail") + `?id=${client.id}`} className="block">
                     <div className="flex items-start gap-3">
@@ -239,13 +239,14 @@ export default function Clients() {
                       </div>
                     </div>
                   </Link>
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-3 right-3" onClick={(e) => e.preventDefault()}>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuTrigger asChild>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="w-4 h-4" />
                         </Button>

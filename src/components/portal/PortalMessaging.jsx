@@ -17,8 +17,9 @@ export default function PortalMessaging({ messages, clientId, currentUser }) {
     mutationFn: async (data) => {
       const message = await base44.entities.Message.create(data);
       
-      // Create notification for coach when client sends a message
+      // Create notification for the other party
       if (currentUser.role !== 'admin') {
+        // Client is sending - notify coach
         const clients = await base44.entities.Client.filter({ id: clientId });
         const client = clients[0];
         
@@ -32,6 +33,23 @@ export default function PortalMessaging({ messages, clientId, currentUser }) {
             scheduled_date: new Date().toISOString(),
             subject: "New Message from " + currentUser.full_name,
             message: `${currentUser.full_name} sent you a message: "${data.content.substring(0, 100)}${data.content.length > 100 ? '...' : ''}"`
+          });
+        }
+      } else {
+        // Admin/Coach is sending - notify client
+        const clients = await base44.entities.Client.filter({ id: clientId });
+        const client = clients[0];
+        
+        if (client?.email) {
+          await base44.entities.Notification.create({
+            type: "new_message",
+            recipient_email: client.email,
+            recipient_name: client.name,
+            client_id: clientId,
+            status: "pending",
+            scheduled_date: new Date().toISOString(),
+            subject: "New Message from Your Coach",
+            message: `You have a new message: "${data.content.substring(0, 100)}${data.content.length > 100 ? '...' : ''}"`
           });
         }
       }
