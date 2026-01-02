@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { 
   LayoutDashboard, Users, Calendar, Target, 
-  Menu, X, ChevronRight, ClipboardCheck
+  Menu, X, ChevronRight, ClipboardCheck, BarChart3
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useState } from "react";
@@ -14,6 +14,7 @@ const navigation = [
   { name: "Sessions", href: "Sessions", icon: Calendar },
   { name: "Onboarding", href: "Onboarding", icon: ClipboardCheck },
   { name: "Pipeline", href: "Pipeline", icon: Target },
+  { name: "Reports", href: "Reports", icon: BarChart3 },
 ];
 
 export default function Layout({ children, currentPageName }) {

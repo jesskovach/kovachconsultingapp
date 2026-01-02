@@ -5,6 +5,7 @@ import Sessions from './pages/Sessions';
 import Pipeline from './pages/Pipeline';
 import Onboarding from './pages/Onboarding';
 import OnboardingDetail from './pages/OnboardingDetail';
+import Reports from './pages/Reports';
 import __Layout from './Layout.jsx';
 
 
@@ -16,6 +17,7 @@ export const PAGES = {
     "Pipeline": Pipeline,
     "Onboarding": Onboarding,
     "OnboardingDetail": OnboardingDetail,
+    "Reports": Reports,
 }
 
 export const pagesConfig = {
