@@ -23,6 +23,7 @@ import TopClientsTable from "@/components/reports/TopClientsTable";
 import CohortAnalysisChart from "@/components/reports/CohortAnalysisChart";
 import ClientHealthScore from "@/components/reports/ClientHealthScore";
 import PredictiveInsights from "@/components/reports/PredictiveInsights";
+import OnboardingAnalytics from "@/components/reports/OnboardingAnalytics";
 import { startOfMonth, subMonths, format, differenceInDays } from "date-fns";
 
 export default function Reports() {
@@ -42,6 +43,11 @@ export default function Reports() {
   const { data: goals = [] } = useQuery({
     queryKey: ["goals"],
     queryFn: () => base44.entities.Goal.list()
+  });
+
+  const { data: onboardingChecklists = [] } = useQuery({
+    queryKey: ["onboarding-checklists"],
+    queryFn: () => base44.entities.OnboardingChecklist.list()
   });
 
   // Calculate metrics
@@ -293,6 +299,10 @@ export default function Reports() {
                   <FileText className="w-4 h-4 mr-2" />
                   Health Scores Report
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('onboarding')}>
+                  <FileText className="w-4 h-4 mr-2" />
+                  Onboarding Analytics Report
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -302,6 +312,7 @@ export default function Reports() {
         <Tabs defaultValue="overview" className="space-y-6">
           <TabsList className="bg-white border border-slate-100 p-1">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="onboarding">Onboarding Analytics</TabsTrigger>
             <TabsTrigger value="advanced">Advanced Analytics</TabsTrigger>
             <TabsTrigger value="predictive">Predictive Insights</TabsTrigger>
           </TabsList>
@@ -387,6 +398,10 @@ export default function Reports() {
               <GoalCompletionChart data={goalData} />
               <TopClientsTable clients={clientEngagement} />
             </div>
+          </TabsContent>
+
+          <TabsContent value="onboarding" className="space-y-6">
+            <OnboardingAnalytics checklists={onboardingChecklists} />
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-6">
