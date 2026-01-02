@@ -108,7 +108,7 @@ export default function PortalMessaging({ messages, clientId, currentUser }) {
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
                 <p className={`text-xs text-slate-400 mt-1 ${isOwn ? 'text-right' : 'text-left'}`}>
-                  {message.sender_name} · {format(new Date(message.created_date), "MMM d, h:mm a")}
+                  {message.sender_name} · {format(new Date(message.created_date), "MMM d 'at' h:mm a")}
                 </p>
               </div>
             </motion.div>

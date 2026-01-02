@@ -155,9 +155,22 @@ export default function NotificationCenter({ open, onClose }) {
                           "p-4 hover:bg-slate-50 transition-colors cursor-pointer group relative",
                           isUnread && "bg-blue-50/50"
                         )}
-                        onClick={() => {
+                        onClick={async () => {
                           if (isUnread) {
                             markAsReadMutation.mutate(notification.id);
+                            // Also mark the actual messages as read if this is a message notification
+                            if (notification.type === "new_message" && notification.client_id) {
+                              const messages = await base44.entities.Message.filter({ 
+                                client_id: notification.client_id,
+                                read: false 
+                              });
+                              for (const msg of messages) {
+                                if (msg.sender_email !== notification.recipient_email) {
+                                  await base44.entities.Message.update(msg.id, { read: true });
+                                }
+                              }
+                              queryClient.invalidateQueries({ queryKey: ["messages"] });
+                            }
                           }
                         }}
                       >
@@ -187,7 +200,7 @@ export default function NotificationCenter({ open, onClose }) {
 
                             <div className="flex items-center justify-between">
                               <span className="text-xs text-slate-400">
-                                {format(new Date(notification.created_date), "MMM d, h:mm a")}
+                                {format(new Date(notification.created_date), "MMM d 'at' h:mm a")}
                               </span>
 
                               <Button
