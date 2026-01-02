@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Target, Calendar, ChevronRight } from "lucide-react";
+import { Target, Calendar, ChevronRight, Star } from "lucide-react";
 import { format } from "date-fns";
 import { Progress } from "@/components/ui/progress";
 
@@ -29,7 +29,9 @@ export default function GoalCard({ goal, index, onClick }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05 }}
       onClick={onClick}
-      className={`p-4 rounded-xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-lg transition-all cursor-pointer group border-l-4 ${categoryColors[goal.category] || categoryColors.other}`}
+      className={`p-4 rounded-xl bg-white border hover:shadow-lg transition-all cursor-pointer group border-l-4 ${categoryColors[goal.category] || categoryColors.other} ${
+        isFeatured ? 'border-2 border-amber-300' : 'border-slate-100 hover:border-slate-200'
+      }`}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
@@ -38,6 +40,12 @@ export default function GoalCard({ goal, index, onClick }) {
               {goal.status?.replace("_", " ")}
             </span>
             <span className="text-xs text-slate-400 capitalize">{goal.category}</span>
+            {isFeatured && (
+              <span className="flex items-center gap-1 text-xs px-2 py-0.5 bg-amber-100 text-amber-700 rounded-full font-medium">
+                <Star className="w-3 h-3 fill-amber-600" />
+                Featured
+              </span>
+            )}
           </div>
           <h4 className="font-semibold text-slate-800 truncate">{goal.title}</h4>
           {goal.description && (
