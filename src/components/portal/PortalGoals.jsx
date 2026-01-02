@@ -1,10 +1,11 @@
 import { motion } from "framer-motion";
-import { Target, TrendingUp, Calendar, CheckCircle } from "lucide-react";
+import { Target, TrendingUp, Calendar, CheckCircle, Plus } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 
-export default function PortalGoals({ goals }) {
+export default function PortalGoals({ goals, onAddGoal, onEditGoal }) {
   const statusColors = {
     completed: "bg-emerald-100 text-emerald-700",
     in_progress: "bg-blue-100 text-blue-700",
@@ -23,6 +24,14 @@ export default function PortalGoals({ goals }) {
 
   return (
     <div className="space-y-4">
+      {onAddGoal && (
+        <div className="flex justify-end">
+          <Button onClick={onAddGoal} className="bg-slate-800 hover:bg-slate-700">
+            <Plus className="w-4 h-4 mr-2" />
+            Add Goal
+          </Button>
+        </div>
+      )}
       {goals.length > 0 ? (
         goals.map((goal, index) => (
           <motion.div
@@ -30,7 +39,8 @@ export default function PortalGoals({ goals }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.05 }}
-            className="bg-white rounded-xl border border-slate-100 p-6 hover:shadow-lg transition-shadow"
+            onClick={() => onEditGoal && onEditGoal(goal)}
+            className="bg-white rounded-xl border border-slate-100 p-6 hover:shadow-lg transition-shadow cursor-pointer"
           >
             <div className="flex items-start justify-between mb-4">
               <div className="flex items-start gap-3">
@@ -70,7 +80,13 @@ export default function PortalGoals({ goals }) {
       ) : (
         <div className="text-center py-12 bg-white rounded-xl border border-slate-100">
           <Target className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-500">No goals set yet</p>
+          <p className="text-slate-500 mb-4">No goals set yet</p>
+          {onAddGoal && (
+            <Button onClick={onAddGoal} variant="outline">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Your First Goal
+            </Button>
+          )}
         </div>
       )}
     </div>

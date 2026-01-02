@@ -14,9 +14,12 @@ import PortalMessaging from "@/components/portal/PortalMessaging";
 import PortalDocuments from "@/components/portal/PortalDocuments";
 import PortalResources from "@/components/portal/PortalResources";
 import SessionFeedbackForm from "@/components/portal/SessionFeedbackForm";
+import GoalForm from "@/components/goals/GoalForm";
 
 export default function ClientPortal() {
   const [feedbackSession, setFeedbackSession] = useState(null);
+  const [showGoalForm, setShowGoalForm] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -100,12 +103,38 @@ export default function ClientPortal() {
     }
   });
 
+  const createGoalMutation = useMutation({
+    mutationFn: (data) => base44.entities.Goal.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["portalGoals", client?.id] });
+      setShowGoalForm(false);
+      setEditingGoal(null);
+    }
+  });
+
+  const updateGoalMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Goal.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["portalGoals", client?.id] });
+      setShowGoalForm(false);
+      setEditingGoal(null);
+    }
+  });
+
   const handleFeedbackSubmit = (feedbackData) => {
     feedbackMutation.mutate({
       ...feedbackData,
       session_id: feedbackSession.id,
       client_id: client.id
     });
+  };
+
+  const handleGoalSubmit = (goalData) => {
+    if (editingGoal) {
+      updateGoalMutation.mutate({ id: editingGoal.id, data: goalData });
+    } else {
+      createGoalMutation.mutate({ ...goalData, client_id: client.id });
+    }
   };
 
   if (!user) {
@@ -250,7 +279,17 @@ export default function ClientPortal() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <h3 className="font-semibold text-slate-800 mb-4">Your Goals</h3>
-                <PortalGoals goals={goals.slice(0, 3)} />
+                <PortalGoals 
+                  goals={goals.slice(0, 3)} 
+                  onAddGoal={() => {
+                    setEditingGoal(null);
+                    setShowGoalForm(true);
+                  }}
+                  onEditGoal={(goal) => {
+                    setEditingGoal(goal);
+                    setShowGoalForm(true);
+                  }}
+                />
               </div>
               <div>
                 <h3 className="font-semibold text-slate-800 mb-4">Upcoming Sessions</h3>
@@ -265,7 +304,17 @@ export default function ClientPortal() {
           </TabsContent>
 
           <TabsContent value="goals">
-            <PortalGoals goals={goals} />
+            <PortalGoals 
+              goals={goals} 
+              onAddGoal={() => {
+                setEditingGoal(null);
+                setShowGoalForm(true);
+              }}
+              onEditGoal={(goal) => {
+                setEditingGoal(goal);
+                setShowGoalForm(true);
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="sessions">
@@ -298,6 +347,19 @@ export default function ClientPortal() {
         session={feedbackSession}
         onSubmit={handleFeedbackSubmit}
         isLoading={feedbackMutation.isPending}
+      />
+
+      {/* Goal Form */}
+      <GoalForm
+        open={showGoalForm}
+        onClose={() => {
+          setShowGoalForm(false);
+          setEditingGoal(null);
+        }}
+        onSubmit={handleGoalSubmit}
+        initialData={editingGoal}
+        clientId={client?.id}
+        isLoading={createGoalMutation.isPending || updateGoalMutation.isPending}
       />
     </div>
   );
