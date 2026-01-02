@@ -95,6 +95,14 @@ export default function ClientPortal() {
     enabled: !!client && assignedResourceIds.length > 0
   });
 
+  const { data: calendlySettings } = useQuery({
+    queryKey: ["calendlySettings"],
+    queryFn: async () => {
+      const settings = await base44.entities.CalendlySettings.list();
+      return settings[0];
+    }
+  });
+
   const feedbackMutation = useMutation({
     mutationFn: (data) => base44.entities.SessionFeedback.create(data),
     onSuccess: () => {
@@ -222,6 +230,30 @@ export default function ClientPortal() {
 
           {/* Overview Tab */}
           <TabsContent value="overview">
+            {calendlySettings?.enabled && calendlySettings?.calendly_url && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 mb-6 text-white"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-xl font-bold mb-2">Ready to schedule your next session?</h3>
+                    <p className="text-blue-100">Book a time that works for you</p>
+                  </div>
+                  <Button
+                    asChild
+                    size="lg"
+                    className="bg-white text-blue-600 hover:bg-blue-50"
+                  >
+                    <a href={calendlySettings.calendly_url} target="_blank" rel="noopener noreferrer">
+                      <Calendar className="w-4 h-4 mr-2" />
+                      Schedule Session
+                    </a>
+                  </Button>
+                </div>
+              </motion.div>
+            )}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

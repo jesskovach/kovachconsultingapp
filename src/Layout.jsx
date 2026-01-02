@@ -20,6 +20,7 @@ const navigation = [
   { name: "Pipeline", href: "Pipeline", icon: Target },
   { name: "Resources", href: "Resources", icon: BookOpen },
   { name: "Payments", href: "PaymentSettings", icon: CreditCard },
+  { name: "Calendly", href: "CalendlySettings", icon: Calendar },
   { name: "Reminders", href: "ReminderSettings", icon: Bell },
   { name: "Reports", href: "Reports", icon: BarChart3 },
 ];
