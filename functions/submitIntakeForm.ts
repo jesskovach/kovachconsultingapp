@@ -3,18 +3,46 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-    const { clientId, responses } = await req.json();
+    const { clientId, responses, verificationToken } = await req.json();
 
     if (!clientId || !responses) {
       return Response.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    // Get client details
+    // Get client details using service role
     const clients = await base44.asServiceRole.entities.Client.filter({ id: clientId });
     const client = clients[0];
 
     if (!client) {
       return Response.json({ error: 'Client not found' }, { status: 404 });
+    }
+
+    // SECURITY: Verify the submission is from the correct client
+    // Option 1: Check if user is authenticated and matches client email
+    const isAuthenticated = await base44.auth.isAuthenticated();
+    if (isAuthenticated) {
+      const user = await base44.auth.me();
+      if (user.email !== client.email && user.role !== 'admin') {
+        return Response.json({ 
+          error: 'Forbidden: You can only submit your own intake form' 
+        }, { status: 403 });
+      }
+    } else {
+      // Option 2: For unauthenticated access, require a verification token
+      // This token should be generated when the welcome email is sent and verified here
+      if (!verificationToken) {
+        return Response.json({ 
+          error: 'Verification token required for unauthenticated submissions' 
+        }, { status: 401 });
+      }
+      
+      // Verify token matches client (simplified - in production use cryptographic signing)
+      const expectedToken = `${clientId}-${client.email}`.substring(0, 32);
+      if (verificationToken !== expectedToken) {
+        return Response.json({ 
+          error: 'Invalid verification token' 
+        }, { status: 403 });
+      }
     }
 
     // Create or update questionnaire

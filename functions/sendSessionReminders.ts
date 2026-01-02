@@ -4,6 +4,18 @@ Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
     
+    // ADMIN ONLY: This function should only be triggered by scheduled tasks or admin users
+    const user = await base44.auth.me();
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (user.role !== 'admin') {
+      return Response.json({ 
+        error: 'Forbidden: Admin access required' 
+      }, { status: 403 });
+    }
+    
     // Get reminder settings
     const settings = await base44.asServiceRole.entities.ReminderSettings.list();
     const reminderSettings = settings.length > 0 ? settings[0] : {
