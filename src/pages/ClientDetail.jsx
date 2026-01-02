@@ -7,7 +7,7 @@ import { createPageUrl } from "@/utils";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Mail, Phone, Building2, Briefcase, Calendar, 
-  Target, Edit2, Plus, Trash2, MoreHorizontal 
+  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +34,7 @@ import GoalForm from "@/components/goals/GoalForm";
 import GoalCard from "@/components/goals/GoalCard";
 import CalendarSyncButton from "@/components/calendar/CalendarSyncButton";
 import PaymentHistory from "@/components/payments/PaymentHistory";
+import AINotesAssistant from "@/components/clients/AINotesAssistant";
 
 export default function ClientDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -45,6 +46,8 @@ export default function ClientDetail() {
   const [editingSession, setEditingSession] = useState(null);
   const [editingGoal, setEditingGoal] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: null, id: null });
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -124,6 +127,14 @@ export default function ClientDetail() {
   const deleteGoalMutation = useMutation({
     mutationFn: (id) => base44.entities.Goal.delete(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["goals", clientId] })
+  });
+
+  const updateNotesMutation = useMutation({
+    mutationFn: (notes) => base44.entities.Client.update(clientId, { notes }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["client", clientId] });
+      setEditingNotes(false);
+    }
   });
 
   const handleDelete = () => {
@@ -423,14 +434,81 @@ export default function ClientDetail() {
           </TabsContent>
 
           {/* Notes Tab */}
-          <TabsContent value="notes">
+          <TabsContent value="notes" className="space-y-4">
             <div className="bg-white rounded-xl border border-slate-100 p-6">
-              {client.notes ? (
-                <p className="text-slate-600 whitespace-pre-wrap">{client.notes}</p>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-slate-800">Client Notes</h3>
+                {!editingNotes && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setEditingNotes(true);
+                      setNotesDraft(client.notes || "");
+                    }}
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Edit Notes
+                  </Button>
+                )}
+              </div>
+
+              {editingNotes ? (
+                <div className="space-y-4">
+                  <Textarea
+                    value={notesDraft}
+                    onChange={(e) => setNotesDraft(e.target.value)}
+                    className="min-h-[200px]"
+                    placeholder="Add notes about this client..."
+                  />
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => updateNotesMutation.mutate(notesDraft)}
+                      disabled={updateNotesMutation.isPending}
+                      className="bg-slate-800 hover:bg-slate-700"
+                    >
+                      {updateNotesMutation.isPending ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : null}
+                      Save Notes
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        setEditingNotes(false);
+                        setNotesDraft("");
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
               ) : (
-                <p className="text-slate-400 text-center py-8">No notes added yet</p>
+                <>
+                  {client.notes ? (
+                    <p className="text-slate-600 whitespace-pre-wrap">{client.notes}</p>
+                  ) : (
+                    <p className="text-slate-400 text-center py-8">No notes added yet</p>
+                  )}
+                </>
               )}
             </div>
+
+            {/* AI Assistant */}
+            <AINotesAssistant
+              clientId={clientId}
+              sessionType="regular"
+              currentNote={notesDraft}
+              onInsertSuggestion={(suggestion) => {
+                const newNote = notesDraft 
+                  ? `${notesDraft}\n\n${suggestion}`
+                  : suggestion;
+                setNotesDraft(newNote);
+                if (!editingNotes) {
+                  setEditingNotes(true);
+                }
+              }}
+            />
           </TabsContent>
         </Tabs>
       </div>
