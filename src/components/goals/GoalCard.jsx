@@ -11,6 +11,9 @@ export default function GoalCard({ goal, index, onClick }) {
     on_hold: "bg-amber-100 text-amber-700"
   };
 
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const isFeatured = goal.featured_month === currentMonth;
+
   const categoryColors = {
     leadership: "border-l-violet-500",
     communication: "border-l-blue-500",

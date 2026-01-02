@@ -55,6 +55,7 @@ export default function ClientDetail() {
   const [notesDraft, setNotesDraft] = useState("");
   const [showResourceDialog, setShowResourceDialog] = useState(false);
   const [showEmailComposer, setShowEmailComposer] = useState(false);
+  const [selectedGoal, setSelectedGoal] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -406,58 +407,109 @@ export default function ClientDetail() {
 
           {/* Goals Tab */}
           <TabsContent value="goals" className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h3 className="font-semibold text-slate-800">Coaching Goals</h3>
-              <Button 
-                size="sm"
-                onClick={() => {
-                  setEditingGoal(null);
-                  setShowGoalForm(true);
-                }}
-                className="bg-slate-800 hover:bg-slate-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Add Goal
-              </Button>
-            </div>
+            {!selectedGoal ? (
+              <>
+                <div className="flex justify-between items-center">
+                  <h3 className="font-semibold text-slate-800">Coaching Goals</h3>
+                  <Button 
+                    size="sm"
+                    onClick={() => {
+                      setEditingGoal(null);
+                      setShowGoalForm(true);
+                    }}
+                    className="bg-slate-800 hover:bg-slate-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Goal
+                  </Button>
+                </div>
 
-            {goals.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {goals.map((goal, index) => (
-                  <div key={goal.id} className="relative group">
-                    <GoalCard 
-                      goal={goal} 
-                      index={index}
-                      onClick={() => {
-                        setEditingGoal(goal);
-                        setShowGoalForm(true);
-                      }}
-                    />
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeleteDialog({ open: true, type: "goal", id: goal.id });
-                      }}
+                {goals.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {goals.map((goal, index) => (
+                      <div key={goal.id} className="relative group">
+                        <GoalCard 
+                          goal={goal} 
+                          index={index}
+                          onClick={() => setSelectedGoal(goal)}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity bg-white shadow-sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteDialog({ open: true, type: "goal", id: goal.id });
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-red-500" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 bg-white rounded-xl border border-slate-100">
+                    <Target className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                    <p className="text-slate-500">No goals set yet</p>
+                    <Button 
+                      variant="link"
+                      onClick={() => setShowGoalForm(true)}
+                      className="mt-2"
                     >
-                      <Trash2 className="w-4 h-4 text-red-500" />
+                      Add the first goal
                     </Button>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             ) : (
-              <div className="text-center py-12 bg-white rounded-xl border border-slate-100">
-                <Target className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                <p className="text-slate-500">No goals set yet</p>
-                <Button 
-                  variant="link"
-                  onClick={() => setShowGoalForm(true)}
-                  className="mt-2"
+              <div className="space-y-4">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSelectedGoal(null)}
                 >
-                  Add the first goal
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Goals
                 </Button>
+
+                <div className="bg-white rounded-xl border border-slate-100 p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-xl font-bold text-slate-800 mb-2">{selectedGoal.title}</h3>
+                      {selectedGoal.description && (
+                        <p className="text-slate-600 mb-3">{selectedGoal.description}</p>
+                      )}
+                      <div className="flex items-center gap-2">
+                        <Badge className="capitalize">{selectedGoal.category}</Badge>
+                        <Badge className="capitalize">{selectedGoal.status.replace('_', ' ')}</Badge>
+                      </div>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setEditingGoal(selectedGoal);
+                        setShowGoalForm(true);
+                      }}
+                    >
+                      <Edit2 className="w-4 h-4 mr-2" />
+                      Edit
+                    </Button>
+                  </div>
+
+                  <Tabs defaultValue="chart" className="mt-6">
+                    <TabsList>
+                      <TabsTrigger value="chart">Progress Chart</TabsTrigger>
+                      <TabsTrigger value="updates">Updates</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="chart" className="mt-4">
+                      <GoalProgressChart goal={selectedGoal} />
+                    </TabsContent>
+                    <TabsContent value="updates" className="mt-4">
+                      <GoalUpdates goal={selectedGoal} />
+                    </TabsContent>
+                  </Tabs>
+                </div>
               </div>
             )}
           </TabsContent>
