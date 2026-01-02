@@ -106,6 +106,11 @@ export default function Onboarding() {
       color: "bg-blue-100 text-blue-700 border-blue-200", 
       label: "In Progress" 
     },
+    blocked: { 
+      icon: AlertCircle, 
+      color: "bg-amber-100 text-amber-700 border-amber-200", 
+      label: "Blocked" 
+    },
     completed: { 
       icon: CheckCircle2, 
       color: "bg-emerald-100 text-emerald-700 border-emerald-200", 
@@ -198,6 +203,7 @@ export default function Onboarding() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="not_started">Not Started</SelectItem>
               </SelectContent>
@@ -249,6 +255,7 @@ export default function Onboarding() {
                             </div>
                             
                             <div className="flex items-center gap-6 text-sm text-slate-500">
+                              <span className="font-semibold text-slate-700">{Math.round(progress)}%</span>
                               <span>{completedTasks} of {totalTasks} tasks completed</span>
                               {checklist.started_date && (
                                 <span>Started {new Date(checklist.started_date).toLocaleDateString()}</span>

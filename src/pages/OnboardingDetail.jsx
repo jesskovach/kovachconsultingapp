@@ -115,6 +115,38 @@ export default function OnboardingDetail() {
     });
   };
 
+  const calculateAutomaticStatus = (tasks) => {
+    const completedCount = tasks.filter(t => t.completed).length;
+    const totalCount = tasks.length;
+    
+    // All tasks completed
+    if (completedCount === totalCount && totalCount > 0) {
+      return 'completed';
+    }
+    
+    // Check if any incomplete task is blocked
+    const hasBlockedTasks = tasks.some(t => {
+      if (t.completed) return false;
+      if (!t.depends_on || t.depends_on.length === 0) return false;
+      return t.depends_on.some(depOrder => {
+        const depTask = tasks.find(dt => dt.order === depOrder);
+        return depTask && !depTask.completed;
+      });
+    });
+    
+    if (hasBlockedTasks) {
+      return 'blocked';
+    }
+    
+    // At least one task completed
+    if (completedCount > 0) {
+      return 'in_progress';
+    }
+    
+    // No tasks completed yet
+    return 'not_started';
+  };
+
   const handleToggleTask = (taskIndex) => {
     if (!checklist) return;
 
@@ -134,13 +166,12 @@ export default function OnboardingDetail() {
         : t
     );
 
-    const completedCount = updatedTasks.filter(t => t.completed).length;
-    const allCompleted = completedCount === updatedTasks.length;
-    const hasBlockedTasks = updatedTasks.some(t => !t.completed && isTaskBlocked(t));
+    const newStatus = calculateAutomaticStatus(updatedTasks);
+    const allCompleted = newStatus === 'completed';
 
     updateChecklistMutation.mutate({
       tasks: updatedTasks,
-      status: allCompleted ? "completed" : hasBlockedTasks ? "blocked" : updatedTasks.some(t => t.completed) ? "in_progress" : "not_started",
+      status: newStatus,
       completed_date: allCompleted ? new Date().toISOString().split("T")[0] : null
     });
   };
