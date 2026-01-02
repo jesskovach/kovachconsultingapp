@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import StatsCard from "@/components/dashboard/StatsCard";
 import UpcomingSession from "@/components/dashboard/UpcomingSession";
 import ClientCard from "@/components/dashboard/ClientCard";
+import FollowUpReminders from "@/components/dashboard/FollowUpReminders";
 import SessionForm from "@/components/sessions/SessionForm";
 import ClientForm from "@/components/clients/ClientForm";
 import { isAfter, isBefore, addDays, startOfDay, format } from "date-fns";
