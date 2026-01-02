@@ -95,11 +95,11 @@ export default function OnboardingDetail() {
     }
   });
 
-  const handleToggleTask = (taskId) => {
+  const handleToggleTask = (taskIndex) => {
     if (!checklist) return;
 
-    const updatedTasks = checklist.tasks.map(task =>
-      task.id === taskId
+    const updatedTasks = checklist.tasks.map((task, index) =>
+      index === taskIndex
         ? {
             ...task,
             completed: !task.completed,
@@ -248,15 +248,15 @@ export default function OnboardingDetail() {
               <div className="space-y-3">
                 {checklist.tasks
                   ?.sort((a, b) => (a.order || 0) - (b.order || 0))
-                  .map((task) => (
+                  .map((task, index) => (
                     <div
-                      key={task.id}
+                      key={index}
                       className="flex items-start gap-3 p-4 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
-                      onClick={() => handleToggleTask(task.id)}
+                      onClick={() => handleToggleTask(index)}
                     >
                       <Checkbox
                         checked={task.completed}
-                        onCheckedChange={() => handleToggleTask(task.id)}
+                        onCheckedChange={() => handleToggleTask(index)}
                         className="mt-1"
                       />
                       <div className="flex-1">
