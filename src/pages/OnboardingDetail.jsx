@@ -6,13 +6,15 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { 
   ArrowLeft, Mail, Calendar, CheckCircle2, Circle, 
-  Send, FileText, Loader2, ExternalLink, Save, BookTemplate
+  Send, FileText, Loader2, ExternalLink, Save, BookTemplate,
+  Lock, User, Users
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -104,27 +106,58 @@ export default function OnboardingDetail() {
     }
   });
 
+  const isTaskBlocked = (task) => {
+    if (!task.depends_on || task.depends_on.length === 0) return false;
+    
+    return task.depends_on.some(dependencyOrder => {
+      const dependencyTask = checklist.tasks.find(t => t.order === dependencyOrder);
+      return dependencyTask && !dependencyTask.completed;
+    });
+  };
+
   const handleToggleTask = (taskIndex) => {
     if (!checklist) return;
 
-    const updatedTasks = checklist.tasks.map((task, index) =>
+    const task = checklist.tasks[taskIndex];
+    if (isTaskBlocked(task) && !task.completed) {
+      toast.error("This task is blocked by incomplete dependencies");
+      return;
+    }
+
+    const updatedTasks = checklist.tasks.map((t, index) =>
       index === taskIndex
         ? {
-            ...task,
-            completed: !task.completed,
-            completed_date: !task.completed ? new Date().toISOString() : null
+            ...t,
+            completed: !t.completed,
+            completed_date: !t.completed ? new Date().toISOString() : null
           }
-        : task
+        : t
     );
 
     const completedCount = updatedTasks.filter(t => t.completed).length;
     const allCompleted = completedCount === updatedTasks.length;
+    const hasBlockedTasks = updatedTasks.some(t => !t.completed && isTaskBlocked(t));
 
     updateChecklistMutation.mutate({
       tasks: updatedTasks,
-      status: allCompleted ? "completed" : updatedTasks.some(t => t.completed) ? "in_progress" : "not_started",
+      status: allCompleted ? "completed" : hasBlockedTasks ? "blocked" : updatedTasks.some(t => t.completed) ? "in_progress" : "not_started",
       completed_date: allCompleted ? new Date().toISOString().split("T")[0] : null
     });
+  };
+
+  const handleAssignTask = (taskIndex, assignee) => {
+    if (!checklist) return;
+
+    const updatedTasks = checklist.tasks.map((task, index) =>
+      index === taskIndex ? { ...task, assigned_to: assignee } : task
+    );
+
+    updateChecklistMutation.mutate({ tasks: updatedTasks });
+  };
+
+  const handleStatusChange = (newStatus) => {
+    updateChecklistMutation.mutate({ status: newStatus });
+    toast.success("Status updated");
   };
 
   const handleSendEmail = (type) => {
@@ -184,6 +217,11 @@ export default function OnboardingDetail() {
       setTemplateName("");
       toast.success("Template saved successfully");
     }
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ["users"],
+    queryFn: () => base44.entities.User.list()
   });
 
   const discoverySession = sessions.find(s => s.type === "discovery");
@@ -246,13 +284,26 @@ export default function OnboardingDetail() {
               <h1 className="text-3xl font-bold text-slate-800">{checklist.client_name}</h1>
               <p className="text-slate-500 mt-1">Onboarding Workflow</p>
             </div>
-            <Link
-              to={createPageUrl("ClientDetail") + `?id=${checklist.client_id}`}
-              className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
-            >
-              View Client Profile
-              <ExternalLink className="w-4 h-4" />
-            </Link>
+            <div className="flex items-center gap-3">
+              <Select value={checklist.status} onValueChange={handleStatusChange}>
+                <SelectTrigger className="w-48">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="not_started">Not Started</SelectItem>
+                  <SelectItem value="in_progress">In Progress</SelectItem>
+                  <SelectItem value="blocked">Blocked</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                </SelectContent>
+              </Select>
+              <Link
+                to={createPageUrl("ClientDetail") + `?id=${checklist.client_id}`}
+                className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+              >
+                View Client Profile
+                <ExternalLink className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         </motion.div>
 
@@ -332,29 +383,83 @@ export default function OnboardingDetail() {
               <div className="space-y-3">
                 {checklist.tasks
                   ?.sort((a, b) => (a.order || 0) - (b.order || 0))
-                  .map((task, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-3 p-4 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
-                      onClick={() => handleToggleTask(index)}
-                    >
-                      <Checkbox
-                        checked={task.completed}
-                        onCheckedChange={() => handleToggleTask(index)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1">
-                        <p className={`font-medium ${
-                          task.completed ? "text-slate-500 line-through" : "text-slate-800"
-                        }`}>
-                          {task.title}
-                        </p>
-                        {task.description && (
-                          <p className="text-sm text-slate-500 mt-1">{task.description}</p>
-                        )}
+                  .map((task, index) => {
+                    const blocked = isTaskBlocked(task);
+                    const assignedUser = users.find(u => u.email === task.assigned_to);
+
+                    return (
+                      <div
+                        key={index}
+                        className={`p-4 rounded-lg border transition-colors ${
+                          blocked && !task.completed
+                            ? "border-amber-200 bg-amber-50/30"
+                            : task.completed
+                            ? "border-slate-100 bg-slate-50/50"
+                            : "border-slate-200 bg-white hover:bg-slate-50"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="relative">
+                            <Checkbox
+                              checked={task.completed}
+                              disabled={blocked && !task.completed}
+                              onCheckedChange={() => handleToggleTask(index)}
+                              className="mt-1"
+                            />
+                            {blocked && !task.completed && (
+                              <Lock className="w-3 h-3 text-amber-600 absolute -top-1 -right-1" />
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between gap-2">
+                              <p className={`font-medium ${
+                                task.completed ? "text-slate-500 line-through" : "text-slate-800"
+                              }`}>
+                                {task.title}
+                              </p>
+
+                              <Select
+                                value={task.assigned_to || "unassigned"}
+                                onValueChange={(value) => handleAssignTask(index, value === "unassigned" ? null : value)}
+                              >
+                                <SelectTrigger className="w-36 h-8 text-xs">
+                                  <User className="w-3 h-3 mr-1" />
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                                  {users.map(user => (
+                                    <SelectItem key={user.id} value={user.email}>
+                                      {user.full_name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {task.description && (
+                              <p className="text-sm text-slate-500 mt-1">{task.description}</p>
+                            )}
+
+                            {blocked && !task.completed && (
+                              <div className="flex items-center gap-1 mt-2 text-xs text-amber-700">
+                                <Lock className="w-3 h-3" />
+                                Blocked by task {task.depends_on?.join(", ")}
+                              </div>
+                            )}
+
+                            {assignedUser && (
+                              <div className="flex items-center gap-1 mt-2 text-xs text-slate-600">
+                                <User className="w-3 h-3" />
+                                Assigned to {assignedUser.full_name}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             </div>
 

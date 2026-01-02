@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Loader2, Plus, Trash2, GripVertical } from "lucide-react";
+import { Loader2, Plus, Trash2, GripVertical, Link2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function TemplateForm({ open, onClose, onSubmit, initialData, isLoading }) {
   const [formData, setFormData] = useState(initialData || {
@@ -31,7 +32,7 @@ export default function TemplateForm({ open, onClose, onSubmit, initialData, isL
   const addTask = () => {
     setFormData((prev) => ({
       ...prev,
-      tasks: [...prev.tasks, { title: "", description: "", order: prev.tasks.length + 1 }]
+      tasks: [...prev.tasks, { title: "", description: "", order: prev.tasks.length + 1, depends_on: [] }]
     }));
   };
 
@@ -116,18 +117,51 @@ export default function TemplateForm({ open, onClose, onSubmit, initialData, isL
                     <div className="flex items-start gap-2">
                       <GripVertical className="w-5 h-5 text-slate-400 mt-2 flex-shrink-0" />
                       <div className="flex-1 space-y-3">
-                        <Input
-                          value={task.title}
-                          onChange={(e) => updateTask(index, "title", e.target.value)}
-                          placeholder="Task title"
-                          required
-                        />
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-medium text-slate-500 bg-slate-100 rounded px-2 py-1">
+                            #{task.order}
+                          </span>
+                          <Input
+                            value={task.title}
+                            onChange={(e) => updateTask(index, "title", e.target.value)}
+                            placeholder="Task title"
+                            required
+                            className="flex-1"
+                          />
+                        </div>
                         <Textarea
                           value={task.description}
                           onChange={(e) => updateTask(index, "description", e.target.value)}
                           placeholder="Task description (optional)"
                           className="min-h-[60px]"
                         />
+                        {index > 0 && (
+                          <div>
+                            <Label className="text-xs text-slate-600 flex items-center gap-1 mb-2">
+                              <Link2 className="w-3 h-3" />
+                              Depends on (blocks until complete)
+                            </Label>
+                            <Select
+                              value={task.depends_on?.length > 0 ? task.depends_on.join(",") : "none"}
+                              onValueChange={(value) => {
+                                const deps = value === "none" ? [] : value.split(",").map(Number);
+                                updateTask(index, "depends_on", deps);
+                              }}
+                            >
+                              <SelectTrigger className="text-xs">
+                                <SelectValue placeholder="No dependencies" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">No dependencies</SelectItem>
+                                {formData.tasks.slice(0, index).map((t, i) => (
+                                  <SelectItem key={i} value={(i + 1).toString()}>
+                                    Task #{i + 1}: {t.title || "Untitled"}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
                       </div>
                       <Button
                         type="button"
