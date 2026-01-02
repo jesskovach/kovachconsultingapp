@@ -253,7 +253,7 @@ export default function Dashboard() {
                               <p className="font-medium text-sm mb-1">{message.sender_name}</p>
                               <p className="text-sm text-white/90 line-clamp-2">{message.content}</p>
                               <p className="text-xs text-white/70 mt-1">
-                                {format(new Date(message.created_date), "MMM d, h:mm a")}
+                                {format(new Date(message.created_date), "MMM d 'at' h:mm a")}
                               </p>
                             </div>
                           </div>
