@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
-import Stripe from 'npm:stripe@17.5.0';
+import Stripe from 'npm:stripe';
+
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY'));
 
 Deno.serve(async (req) => {
   try {
@@ -10,62 +12,63 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { amount, description, clientId, clientName, type, sessionId } = await req.json();
+    const { clientId, amount, description, type = 'session' } = await req.json();
 
-    const stripeSecretKey = Deno.env.get("STRIPE_SECRET_KEY");
-    if (!stripeSecretKey) {
-      return Response.json({ error: 'Stripe not configured' }, { status: 500 });
+    // Get client details
+    const clients = await base44.entities.Client.filter({ id: clientId });
+    const client = clients[0];
+
+    if (!client) {
+      return Response.json({ error: 'Client not found' }, { status: 404 });
     }
 
-    const stripe = new Stripe(stripeSecretKey);
-
     // Create payment record
-    const payment = await base44.entities.Payment.create({
+    const payment = await base44.asServiceRole.entities.Payment.create({
       client_id: clientId,
-      client_name: clientName,
-      amount: amount,
-      currency: 'usd',
-      status: 'pending',
-      type: type || 'session',
-      description: description,
-      session_id: sessionId
+      client_name: client.name,
+      amount,
+      description,
+      type,
+      status: 'pending'
     });
 
-    // Create Stripe Checkout Session
+    // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: description,
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            unit_amount: Math.round(amount * 100),
+            product_data: {
+              name: description || 'Coaching Session',
+              description: `Payment for ${client.name}`
+            }
           },
-          unit_amount: Math.round(amount * 100), // Convert to cents
-        },
-        quantity: 1,
-      }],
+          quantity: 1
+        }
+      ],
       mode: 'payment',
-      success_url: `${req.headers.get('origin')}/client-portal?payment=success`,
-      cancel_url: `${req.headers.get('origin')}/client-portal?payment=cancelled`,
+      customer_email: client.email,
+      success_url: `${req.headers.get('origin')}/ClientPortal?payment=success`,
+      cancel_url: `${req.headers.get('origin')}/ClientPortal?payment=cancelled`,
       metadata: {
         payment_id: payment.id,
-        client_id: clientId,
-        session_id: sessionId || ''
-      },
-      customer_email: user.email
+        client_id: clientId
+      }
     });
 
-    // Update payment with Stripe session ID
-    await base44.entities.Payment.update(payment.id, {
+    // Update payment with checkout session ID
+    await base44.asServiceRole.entities.Payment.update(payment.id, {
       stripe_checkout_session_id: session.id
     });
 
     return Response.json({
-      success: true,
-      checkoutUrl: session.url,
-      paymentId: payment.id
+      sessionId: session.id,
+      url: session.url
     });
   } catch (error) {
+    console.error('Stripe checkout error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 });

@@ -1,56 +1,43 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function PaymentButton({ 
-  amount, 
-  description, 
-  clientId, 
-  clientName, 
-  type = "session",
-  sessionId,
-  variant = "default",
-  size = "default",
-  className = ""
-}) {
-  const createCheckoutMutation = useMutation({
-    mutationFn: async () => {
+export default function PaymentButton({ clientId, amount, description, type = "session", size = "default" }) {
+  const [loading, setLoading] = useState(false);
+
+  const handlePayment = async () => {
+    try {
+      setLoading(true);
       const { data } = await base44.functions.invoke('createStripeCheckout', {
+        clientId,
         amount,
         description,
-        clientId,
-        clientName,
-        type,
-        sessionId
+        type
       });
-      return data;
-    },
-    onSuccess: (data) => {
-      if (data.checkoutUrl) {
-        window.location.href = data.checkoutUrl;
-      }
-    },
-    onError: (error) => {
-      toast.error("Failed to create payment: " + error.message);
-    }
-  });
 
-  const handlePayment = () => {
-    createCheckoutMutation.mutate();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        toast.error('Failed to create checkout session');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast.error('Failed to initiate payment');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <Button
-      variant={variant}
-      size={size}
       onClick={handlePayment}
-      disabled={createCheckoutMutation.isPending}
-      className={className}
+      disabled={loading}
+      size={size}
+      className="bg-slate-800 hover:bg-slate-700"
     >
-      {createCheckoutMutation.isPending ? (
+      {loading ? (
         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
       ) : (
         <CreditCard className="w-4 h-4 mr-2" />
