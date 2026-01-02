@@ -24,7 +24,12 @@ export default function Clients() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Client.create(data),
+    mutationFn: async (data) => {
+      const client = await base44.entities.Client.create(data);
+      // Send welcome email for new clients
+      await base44.functions.invoke("sendWelcomeEmail", { clientId: client.id });
+      return client;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowForm(false);
