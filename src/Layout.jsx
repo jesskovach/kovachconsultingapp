@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Calendar, Target, 
   Menu, X, ChevronRight, ClipboardCheck
 } from "lucide-react";
+import NotificationBell from "@/components/notifications/NotificationBell";
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -29,16 +30,19 @@ export default function Layout({ children, currentPageName }) {
             </div>
             <span className="font-semibold text-slate-800">CoachCRM</span>
           </div>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
-          >
-            {sidebarOpen ? (
-              <X className="w-5 h-5 text-slate-600" />
-            ) : (
-              <Menu className="w-5 h-5 text-slate-600" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            >
+              {sidebarOpen ? (
+                <X className="w-5 h-5 text-slate-600" />
+              ) : (
+                <Menu className="w-5 h-5 text-slate-600" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -125,6 +129,9 @@ export default function Layout({ children, currentPageName }) {
 
           {/* Footer */}
           <div className="p-4 border-t border-slate-100">
+            <div className="flex items-center justify-between mb-4">
+              <NotificationBell />
+            </div>
             <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
               <p className="text-xs text-slate-500 mb-2">Pro Tip</p>
               <p className="text-sm text-slate-600">Track client goals to measure coaching impact over time.</p>
