@@ -15,6 +15,7 @@ export default function Clients() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewMode, setViewMode] = useState("grid");
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
 
   const queryClient = useQueryClient();
 
