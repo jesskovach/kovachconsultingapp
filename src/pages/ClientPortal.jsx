@@ -228,6 +228,8 @@ export default function ClientPortal() {
                 <PortalSessions 
                   sessions={sessions.filter(s => s.status === 'scheduled').slice(0, 3)} 
                   onProvideFeedback={setFeedbackSession}
+                  clientId={client.id}
+                  clientName={client.name}
                 />
               </div>
             </div>
@@ -238,7 +240,12 @@ export default function ClientPortal() {
           </TabsContent>
 
           <TabsContent value="sessions">
-            <PortalSessions sessions={sessions} onProvideFeedback={setFeedbackSession} />
+            <PortalSessions 
+              sessions={sessions} 
+              onProvideFeedback={setFeedbackSession}
+              clientId={client.id}
+              clientName={client.name}
+            />
           </TabsContent>
 
           <TabsContent value="messages">

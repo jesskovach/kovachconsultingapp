@@ -312,16 +312,16 @@ export default function ClientDetail() {
                           )}
                           </div>
                           </div>
-                          <div className="flex flex-col gap-2">
-                          {session.status === 'scheduled' && (
-                          <CalendarSyncButton session={session} />
-                          )}
-                          <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
+                          <div className="flex items-center gap-2">
+                            {session.status === 'scheduled' && (
+                              <CalendarSyncButton session={session} />
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreHorizontal className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={() => {
                             setEditingSession(session);
@@ -338,8 +338,8 @@ export default function ClientDetail() {
                             Delete
                           </DropdownMenuItem>
                         </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
+                        </DropdownMenu>
+                        </div>
                   </motion.div>
                 ))}
               </div>
