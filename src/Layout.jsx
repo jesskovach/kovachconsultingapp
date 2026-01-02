@@ -36,8 +36,11 @@ export default function Layout({ children, currentPageName }) {
 
   // Redirect non-admin users to ClientPortal
   useEffect(() => {
-    if (!isLoading && user && user.role !== 'admin' && currentPageName !== 'ClientPortal' && currentPageName !== 'ClientIntake') {
-      navigate(createPageUrl('ClientPortal'));
+    if (!isLoading && user && user.role !== 'admin') {
+      const allowedPages = ['ClientPortal', 'ClientIntake'];
+      if (!allowedPages.includes(currentPageName)) {
+        navigate(createPageUrl('ClientPortal'), { replace: true });
+      }
     }
   }, [user, isLoading, currentPageName, navigate]);
 

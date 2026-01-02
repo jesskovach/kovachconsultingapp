@@ -31,17 +31,7 @@ export default function ClientPortal() {
     queryKey: ["clientByEmail", user?.email],
     queryFn: async () => {
       const clients = await base44.entities.Client.filter({ email: user.email });
-      if (clients.length > 0) {
-        return clients[0];
-      }
-      // Auto-create client record for new users
-      const newClient = await base44.entities.Client.create({
-        name: user.full_name || user.email.split('@')[0],
-        email: user.email,
-        status: "prospect",
-        pipeline_stage: "lead"
-      });
-      return newClient;
+      return clients.length > 0 ? clients[0] : null;
     },
     enabled: !!user
   });
