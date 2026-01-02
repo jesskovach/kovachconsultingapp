@@ -6,6 +6,7 @@ import Pipeline from './pages/Pipeline';
 import Onboarding from './pages/Onboarding';
 import OnboardingDetail from './pages/OnboardingDetail';
 import Reports from './pages/Reports';
+import ClientPortal from './pages/ClientPortal';
 import __Layout from './Layout.jsx';
 
 
@@ -18,6 +19,7 @@ export const PAGES = {
     "Onboarding": Onboarding,
     "OnboardingDetail": OnboardingDetail,
     "Reports": Reports,
+    "ClientPortal": ClientPortal,
 }
 
 export const pagesConfig = {
