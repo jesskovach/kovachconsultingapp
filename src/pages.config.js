@@ -1,3 +1,4 @@
+import CalendlySettings from './pages/CalendlySettings';
 import ClientDetail from './pages/ClientDetail';
 import ClientHistory from './pages/ClientHistory';
 import ClientIntake from './pages/ClientIntake';
@@ -13,11 +14,11 @@ import ReminderSettings from './pages/ReminderSettings';
 import Reports from './pages/Reports';
 import Resources from './pages/Resources';
 import Sessions from './pages/Sessions';
-import CalendlySettings from './pages/CalendlySettings';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
+    "CalendlySettings": CalendlySettings,
     "ClientDetail": ClientDetail,
     "ClientHistory": ClientHistory,
     "ClientIntake": ClientIntake,
@@ -33,7 +34,6 @@ export const PAGES = {
     "Reports": Reports,
     "Resources": Resources,
     "Sessions": Sessions,
-    "CalendlySettings": CalendlySettings,
 }
 
 export const pagesConfig = {

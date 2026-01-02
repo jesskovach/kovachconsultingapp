@@ -7,7 +7,7 @@ import { createPageUrl } from "@/utils";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Mail, Phone, Building2, Briefcase, Calendar, 
-  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink, Send
+  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink, Send, MessageSquare
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +40,8 @@ import AINotesAssistant from "@/components/clients/AINotesAssistant";
 import ResourceAssignmentDialog from "@/components/resources/ResourceAssignmentDialog";
 import EmailComposer from "@/components/emails/EmailComposer";
 import EmailThread from "@/components/emails/EmailThread";
+import PortalMessaging from "@/components/portal/PortalMessaging";
+import { MessageSquare } from "lucide-react";
 
 export default function ClientDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -103,6 +105,18 @@ export default function ClientDetail() {
       return resources.filter(r => resourceIds.includes(r.id));
     },
     enabled: !!clientId && assignments.length > 0
+  });
+
+  const { data: messages = [] } = useQuery({
+    queryKey: ["messages", clientId],
+    queryFn: () => base44.entities.Message.filter({ client_id: clientId }, "-created_date"),
+    enabled: !!clientId,
+    refetchInterval: 10000
+  });
+
+  const { data: currentUser } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me()
   });
 
   const updateClientMutation = useMutation({
@@ -297,6 +311,10 @@ export default function ClientDetail() {
             <TabsTrigger value="goals" className="data-[state=active]:bg-slate-100">
               <Target className="w-4 h-4 mr-2" />
               Goals ({goals.length})
+            </TabsTrigger>
+            <TabsTrigger value="messages" className="data-[state=active]:bg-slate-100">
+              <MessageSquare className="w-4 h-4 mr-2" />
+              Messages ({messages.filter(m => !m.read && m.sender_email !== currentUser?.email).length})
             </TabsTrigger>
             <TabsTrigger value="emails" className="data-[state=active]:bg-slate-100">
               <Mail className="w-4 h-4 mr-2" />
@@ -512,6 +530,12 @@ export default function ClientDetail() {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          {/* Messages Tab */}
+          <TabsContent value="messages" className="space-y-4">
+            <h3 className="font-semibold text-slate-800 mb-4">Direct Messages</h3>
+            {currentUser && <PortalMessaging messages={messages} clientId={clientId} currentUser={currentUser} />}
           </TabsContent>
 
           {/* Emails Tab */}
