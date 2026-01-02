@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { 
   LayoutDashboard, Users, Calendar, Target, 
-  Menu, X, ChevronRight, ClipboardCheck, BarChart3, CreditCard, Bell, BookOpen
+  Menu, X, ChevronRight, ClipboardCheck, BarChart3, CreditCard, Bell, BookOpen, FileText
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useState } from "react";
@@ -13,6 +13,7 @@ const navigation = [
   { name: "Clients", href: "Clients", icon: Users },
   { name: "Sessions", href: "Sessions", icon: Calendar },
   { name: "Onboarding", href: "Onboarding", icon: ClipboardCheck },
+  { name: "Templates", href: "OnboardingTemplates", icon: FileText },
   { name: "Pipeline", href: "Pipeline", icon: Target },
   { name: "Resources", href: "Resources", icon: BookOpen },
   { name: "Payments", href: "PaymentSettings", icon: CreditCard },

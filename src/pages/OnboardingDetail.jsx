@@ -6,12 +6,13 @@ import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { 
   ArrowLeft, Mail, Calendar, CheckCircle2, Circle, 
-  Send, FileText, Loader2, ExternalLink 
+  Send, FileText, Loader2, ExternalLink, Save, BookTemplate
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +34,9 @@ export default function OnboardingDetail() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [emailType, setEmailType] = useState(null);
   const [notes, setNotes] = useState("");
+  const [showTemplateDialog, setShowTemplateDialog] = useState(false);
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false);
+  const [templateName, setTemplateName] = useState("");
 
   const queryClient = useQueryClient();
 
@@ -66,6 +70,11 @@ export default function OnboardingDetail() {
     queryFn: () => base44.entities.Session.filter({ client_id: checklist.client_id }),
     enabled: !!checklist?.client_id,
     staleTime: 30000
+  });
+
+  const { data: templates = [] } = useQuery({
+    queryKey: ["onboarding-templates"],
+    queryFn: () => base44.entities.OnboardingTemplate.list("-created_date")
   });
 
   const updateChecklistMutation = useMutation({
@@ -135,6 +144,47 @@ export default function OnboardingDetail() {
     updateChecklistMutation.mutate({ notes });
     toast.success("Notes saved");
   };
+
+  const applyTemplateMutation = useMutation({
+    mutationFn: async (templateId) => {
+      const template = templates.find(t => t.id === templateId);
+      if (!template) return;
+      
+      const tasksWithIds = template.tasks.map((task, index) => ({
+        ...task,
+        completed: false,
+        completed_date: null,
+        order: index + 1
+      }));
+
+      return base44.entities.OnboardingChecklist.update(checklistId, {
+        tasks: tasksWithIds
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["onboarding-checklist", checklistId] });
+      setShowTemplateDialog(false);
+      toast.success("Template applied successfully");
+    }
+  });
+
+  const saveAsTemplateMutation = useMutation({
+    mutationFn: async (name) => {
+      const templateTasks = checklist.tasks.map(({ completed, completed_date, ...task }) => task);
+      return base44.entities.OnboardingTemplate.create({
+        name,
+        description: `Template created from ${checklist.client_name}'s onboarding`,
+        tasks: templateTasks,
+        is_default: false
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["onboarding-templates"] });
+      setShowSaveTemplateDialog(false);
+      setTemplateName("");
+      toast.success("Template saved successfully");
+    }
+  });
 
   const discoverySession = sessions.find(s => s.type === "discovery");
 
@@ -258,7 +308,27 @@ export default function OnboardingDetail() {
 
             {/* Checklist */}
             <div className="bg-white rounded-xl border border-slate-100 p-6">
-              <h3 className="font-semibold text-slate-800 mb-4">Onboarding Tasks</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-slate-800">Onboarding Tasks</h3>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowTemplateDialog(true)}
+                  >
+                    <BookTemplate className="w-4 h-4 mr-1" />
+                    Apply Template
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowSaveTemplateDialog(true)}
+                  >
+                    <Save className="w-4 h-4 mr-1" />
+                    Save as Template
+                  </Button>
+                </div>
+              </div>
               <div className="space-y-3">
                 {checklist.tasks
                   ?.sort((a, b) => (a.order || 0) - (b.order || 0))
@@ -362,6 +432,77 @@ export default function OnboardingDetail() {
           </div>
         </div>
       </div>
+
+      {/* Apply Template Dialog */}
+      <AlertDialog open={showTemplateDialog} onOpenChange={setShowTemplateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Apply Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Choose a template to apply to this onboarding checklist. This will replace all current tasks.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 py-4">
+            {templates.map((template) => (
+              <button
+                key={template.id}
+                onClick={() => applyTemplateMutation.mutate(template.id)}
+                disabled={applyTemplateMutation.isPending}
+                className="w-full text-left p-3 rounded-lg border border-slate-200 hover:border-slate-300 hover:bg-slate-50 transition-colors"
+              >
+                <div className="font-medium text-slate-800">{template.name}</div>
+                {template.description && (
+                  <div className="text-sm text-slate-500 mt-1">{template.description}</div>
+                )}
+                <div className="text-xs text-slate-400 mt-1">{template.tasks?.length || 0} tasks</div>
+              </button>
+            ))}
+            {templates.length === 0 && (
+              <p className="text-sm text-slate-500 text-center py-4">No templates available</p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Save as Template Dialog */}
+      <AlertDialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Save as Template</AlertDialogTitle>
+            <AlertDialogDescription>
+              Save this checklist's tasks as a reusable template for future clients.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4">
+            <Label htmlFor="template-name" className="text-slate-700">Template Name</Label>
+            <Input
+              id="template-name"
+              value={templateName}
+              onChange={(e) => setTemplateName(e.target.value)}
+              placeholder="e.g., Executive Coaching Onboarding"
+              className="mt-2"
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setTemplateName("")}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => saveAsTemplateMutation.mutate(templateName)}
+              disabled={!templateName || saveAsTemplateMutation.isPending}
+              className="bg-slate-800 hover:bg-slate-700"
+            >
+              {saveAsTemplateMutation.isPending ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4 mr-2" />
+              )}
+              Save Template
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Email Confirmation Dialog */}
       <AlertDialog open={showEmailDialog} onOpenChange={setShowEmailDialog}>

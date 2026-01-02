@@ -11,6 +11,7 @@ import PaymentSettings from './pages/PaymentSettings';
 import ReminderSettings from './pages/ReminderSettings';
 import ClientIntake from './pages/ClientIntake';
 import Resources from './pages/Resources';
+import OnboardingTemplates from './pages/OnboardingTemplates';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +29,7 @@ export const PAGES = {
     "ReminderSettings": ReminderSettings,
     "ClientIntake": ClientIntake,
     "Resources": Resources,
+    "OnboardingTemplates": OnboardingTemplates,
 }
 
 export const pagesConfig = {
