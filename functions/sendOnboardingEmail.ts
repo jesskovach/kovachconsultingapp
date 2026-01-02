@@ -79,22 +79,67 @@ ${user.full_name}
                 });
             }
 
-            subject = `Pre-Coaching Questionnaire - ${client.name}`;
+            // Generate intake form URL
+            const appUrl = Deno.env.get("APP_URL") || "https://app.base44.com";
+            const intakeUrl = `${appUrl}/#/ClientIntake?clientId=${clientId}`;
+
+            subject = `Pre-Coaching Questionnaire`;
             body = `
-Dear ${client.name},
-
-To make the most of our coaching engagement, I'd like to learn more about your background, challenges, and goals. Please take 15-20 minutes to complete this initial questionnaire.
-
-Your responses will help me prepare for our discovery session and tailor our coaching approach to your specific needs.
-
-Click here to complete the questionnaire: [Link will be provided in production]
-
-Please complete this by the end of the week so we can schedule our discovery session.
-
-If you have any questions, feel free to reach out.
-
-Best regards,
-${user.full_name}
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { margin-bottom: 30px; }
+        .content { margin-bottom: 20px; }
+        .button { 
+            display: inline-block;
+            background-color: #1e293b;
+            color: white !important;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .footer { 
+            margin-top: 40px; 
+            padding-top: 20px; 
+            border-top: 1px solid #e2e8f0;
+            font-size: 14px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="color: #1e293b; margin-bottom: 10px;">Pre-Coaching Questionnaire</h2>
+        </div>
+        
+        <div class="content">
+            <p>Dear ${client.name},</p>
+            
+            <p>To make the most of our coaching engagement, I'd like to learn more about your background, challenges, and goals. Please take <strong>15-20 minutes</strong> to complete this initial questionnaire.</p>
+            
+            <p>Your responses will help me prepare for our discovery session and tailor our coaching approach to your specific needs.</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${intakeUrl}" class="button">Complete Your Questionnaire</a>
+            </div>
+            
+            <p>Please complete this by the end of the week so we can schedule our discovery session.</p>
+            
+            <p>If you have any questions, feel free to reach out.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Best regards,<br>${user.full_name}</p>
+        </div>
+    </div>
+</body>
+</html>
             `;
 
             // Update onboarding checklist
