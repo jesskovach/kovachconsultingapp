@@ -28,6 +28,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import ClientForm from "@/components/clients/ClientForm";
 import SessionForm from "@/components/sessions/SessionForm";
 import GoalForm from "@/components/goals/GoalForm";
