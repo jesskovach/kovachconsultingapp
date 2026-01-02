@@ -146,11 +146,25 @@ export default function OnboardingDetail() {
     );
   }
 
+  if (!checklistId) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-600 mb-4">No checklist ID provided</p>
+          <Link to={createPageUrl("Onboarding")}>
+            <Button variant="outline">Back to Onboarding</Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   if (error || !checklist) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-slate-600 mb-4">Unable to load onboarding details</p>
+          <p className="text-sm text-slate-400 mb-4">Error: {error?.message || "Checklist not found"}</p>
           <Link to={createPageUrl("Onboarding")}>
             <Button variant="outline">Back to Onboarding</Button>
           </Link>
