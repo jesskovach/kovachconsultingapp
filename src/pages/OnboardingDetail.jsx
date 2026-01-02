@@ -36,13 +36,16 @@ export default function OnboardingDetail() {
 
   const queryClient = useQueryClient();
 
-  const { data: checklist, isLoading } = useQuery({
+  const { data: checklist, isLoading, error } = useQuery({
     queryKey: ["onboarding-checklist", checklistId],
     queryFn: async () => {
+      if (!checklistId) return null;
       const checklists = await base44.entities.OnboardingChecklist.filter({ id: checklistId });
       return checklists[0];
     },
-    enabled: !!checklistId
+    enabled: !!checklistId,
+    staleTime: 30000,
+    retry: 1
   });
 
   const { data: questionnaire } = useQuery({
@@ -135,10 +138,23 @@ export default function OnboardingDetail() {
 
   const discoverySession = sessions.find(s => s.type === "discovery");
 
-  if (isLoading || !checklist) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (error || !checklist) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-slate-600 mb-4">Unable to load onboarding details</p>
+          <Link to={createPageUrl("Onboarding")}>
+            <Button variant="outline">Back to Onboarding</Button>
+          </Link>
+        </div>
       </div>
     );
   }
