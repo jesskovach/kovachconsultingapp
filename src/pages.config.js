@@ -1,4 +1,5 @@
 import ClientDetail from './pages/ClientDetail';
+import ClientHistory from './pages/ClientHistory';
 import ClientIntake from './pages/ClientIntake';
 import ClientPortal from './pages/ClientPortal';
 import Clients from './pages/Clients';
@@ -12,12 +13,12 @@ import ReminderSettings from './pages/ReminderSettings';
 import Reports from './pages/Reports';
 import Resources from './pages/Resources';
 import Sessions from './pages/Sessions';
-import ClientHistory from './pages/ClientHistory';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "ClientDetail": ClientDetail,
+    "ClientHistory": ClientHistory,
     "ClientIntake": ClientIntake,
     "ClientPortal": ClientPortal,
     "Clients": Clients,
@@ -31,7 +32,6 @@ export const PAGES = {
     "Reports": Reports,
     "Resources": Resources,
     "Sessions": Sessions,
-    "ClientHistory": ClientHistory,
 }
 
 export const pagesConfig = {

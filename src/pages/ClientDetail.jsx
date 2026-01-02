@@ -7,7 +7,7 @@ import { createPageUrl } from "@/utils";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Mail, Phone, Building2, Briefcase, Calendar, 
-  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink
+  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink, Send
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +38,8 @@ import CalendarSyncButton from "@/components/calendar/CalendarSyncButton";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import AINotesAssistant from "@/components/clients/AINotesAssistant";
 import ResourceAssignmentDialog from "@/components/resources/ResourceAssignmentDialog";
+import EmailComposer from "@/components/emails/EmailComposer";
+import EmailThread from "@/components/emails/EmailThread";
 
 export default function ClientDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -52,6 +54,7 @@ export default function ClientDetail() {
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
   const [showResourceDialog, setShowResourceDialog] = useState(false);
+  const [showEmailComposer, setShowEmailComposer] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -291,6 +294,10 @@ export default function ClientDetail() {
               <Target className="w-4 h-4 mr-2" />
               Goals ({goals.length})
             </TabsTrigger>
+            <TabsTrigger value="emails" className="data-[state=active]:bg-slate-100">
+              <Mail className="w-4 h-4 mr-2" />
+              Emails
+            </TabsTrigger>
             <TabsTrigger value="payments" className="data-[state=active]:bg-slate-100">
               Payments
             </TabsTrigger>
@@ -450,6 +457,22 @@ export default function ClientDetail() {
                 </Button>
               </div>
             )}
+          </TabsContent>
+
+          {/* Emails Tab */}
+          <TabsContent value="emails" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Email Communications</h3>
+              <Button 
+                size="sm"
+                onClick={() => setShowEmailComposer(true)}
+                className="bg-slate-800 hover:bg-slate-700"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Compose Email
+              </Button>
+            </div>
+            <EmailThread clientId={clientId} />
           </TabsContent>
 
           {/* Payments Tab */}
@@ -666,6 +689,13 @@ export default function ClientDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Email Composer */}
+      <EmailComposer
+        open={showEmailComposer}
+        onClose={() => setShowEmailComposer(false)}
+        client={client}
+      />
 
       {/* Resource Assignment Dialog */}
       <ResourceAssignmentDialog

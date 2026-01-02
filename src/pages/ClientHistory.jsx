@@ -52,6 +52,12 @@ export default function ClientHistory() {
     enabled: !!selectedClient
   });
 
+  const { data: emails = [] } = useQuery({
+    queryKey: ["client-emails", selectedClient],
+    queryFn: () => base44.entities.Email.filter({ client_id: selectedClient }),
+    enabled: !!selectedClient
+  });
+
   const timeline = useMemo(() => {
     if (!selectedClient) return [];
 
@@ -140,9 +146,24 @@ export default function ClientHistory() {
       }
     });
 
+    // Add logged emails
+    emails.forEach(email => {
+      events.push({
+        id: `email-${email.id}`,
+        type: "email",
+        date: new Date(email.sent_date || email.created_date),
+        title: email.subject,
+        description: email.body?.substring(0, 150) + (email.body?.length > 150 ? "..." : ""),
+        icon: Mail,
+        color: "amber",
+        status: email.status,
+        direction: email.direction
+      });
+    });
+
     // Sort by date descending
     return events.sort((a, b) => b.date - a.date);
-  }, [sessions, onboarding, messages, notifications, selectedClient]);
+  }, [sessions, onboarding, messages, notifications, emails, selectedClient]);
 
   const filteredTimeline = useMemo(() => {
     return timeline.filter(event => {
