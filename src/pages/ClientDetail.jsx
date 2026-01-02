@@ -305,41 +305,42 @@ export default function ClientDetail() {
                             <span className="text-sm text-slate-500 capitalize">{session.type}</span>
                           </div>
                           <p className="text-sm text-slate-500 mt-1">
-                          {format(new Date(session.date), "h:mm a")} · {session.duration || 60} min
+                            {format(new Date(session.date), "h:mm a")} · {session.duration || 60} min
                           </p>
                           {session.notes && (
-                          <p className="text-sm text-slate-600 mt-2 line-clamp-2">{session.notes}</p>
+                            <p className="text-sm text-slate-600 mt-2 line-clamp-2">{session.notes}</p>
                           )}
-                          </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {session.status === 'scheduled' && (
-                              <CalendarSyncButton session={session} />
-                            )}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => {
-                            setEditingSession(session);
-                            setShowSessionForm(true);
-                          }}>
-                            <Edit2 className="w-4 h-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            className="text-red-600"
-                            onClick={() => setDeleteDialog({ open: true, type: "session", id: session.id })}
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                        </DropdownMenu>
                         </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {session.status === 'scheduled' && (
+                          <CalendarSyncButton session={session} />
+                        )}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => {
+                              setEditingSession(session);
+                              setShowSessionForm(true);
+                            }}>
+                              <Edit2 className="w-4 h-4 mr-2" />
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              className="text-red-600"
+                              onClick={() => setDeleteDialog({ open: true, type: "session", id: session.id })}
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
                   </motion.div>
                 ))}
               </div>
