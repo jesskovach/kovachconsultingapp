@@ -56,6 +56,7 @@ export default function NotificationCenter({ open, onClose }) {
       case "task_overdue": return AlertTriangle;
       case "client_activity": return MessageSquare;
       case "session_followup": return Clock;
+      case "new_message": return MessageSquare;
       default: return Bell;
     }
   };
@@ -67,6 +68,7 @@ export default function NotificationCenter({ open, onClose }) {
       case "task_overdue": return "red";
       case "client_activity": return "violet";
       case "session_followup": return "amber";
+      case "new_message": return "violet";
       default: return "slate";
     }
   };
