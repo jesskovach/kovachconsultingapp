@@ -257,7 +257,7 @@ export default function ClientPortal() {
           </TabsContent>
 
           <TabsContent value="resources">
-            <PortalResources resources={resources} />
+            <PortalResources resources={resources} clientId={client?.id} />
           </TabsContent>
         </Tabs>
       </div>

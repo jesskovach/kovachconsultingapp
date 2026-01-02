@@ -7,7 +7,7 @@ import { createPageUrl } from "@/utils";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Mail, Phone, Building2, Briefcase, Calendar, 
-  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2
+  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +37,7 @@ import GoalCard from "@/components/goals/GoalCard";
 import CalendarSyncButton from "@/components/calendar/CalendarSyncButton";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import AINotesAssistant from "@/components/clients/AINotesAssistant";
+import ResourceAssignmentDialog from "@/components/resources/ResourceAssignmentDialog";
 
 export default function ClientDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -50,6 +51,7 @@ export default function ClientDetail() {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: null, id: null });
   const [editingNotes, setEditingNotes] = useState(false);
   const [notesDraft, setNotesDraft] = useState("");
+  const [showResourceDialog, setShowResourceDialog] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -77,6 +79,23 @@ export default function ClientDetail() {
   const { data: allClients = [] } = useQuery({
     queryKey: ["clients"],
     queryFn: () => base44.entities.Client.list()
+  });
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["resource-assignments", clientId],
+    queryFn: () => base44.entities.ResourceAssignment.filter({ client_id: clientId }),
+    enabled: !!clientId
+  });
+
+  const { data: assignedResources = [] } = useQuery({
+    queryKey: ["assigned-resources", clientId],
+    queryFn: async () => {
+      const resourceIds = assignments.map(a => a.resource_id);
+      if (resourceIds.length === 0) return [];
+      const resources = await base44.entities.Resource.list();
+      return resources.filter(r => resourceIds.includes(r.id));
+    },
+    enabled: !!clientId && assignments.length > 0
   });
 
   const updateClientMutation = useMutation({
@@ -275,6 +294,9 @@ export default function ClientDetail() {
             <TabsTrigger value="payments" className="data-[state=active]:bg-slate-100">
               Payments
             </TabsTrigger>
+            <TabsTrigger value="resources" className="data-[state=active]:bg-slate-100">
+              Resources ({assignedResources.length})
+            </TabsTrigger>
             <TabsTrigger value="notes" className="data-[state=active]:bg-slate-100">
               Notes
             </TabsTrigger>
@@ -435,6 +457,73 @@ export default function ClientDetail() {
             <PaymentHistory clientId={clientId} />
           </TabsContent>
 
+          {/* Resources Tab */}
+          <TabsContent value="resources" className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-semibold text-slate-800">Assigned Resources</h3>
+              <Button 
+                size="sm"
+                onClick={() => setShowResourceDialog(true)}
+                className="bg-slate-800 hover:bg-slate-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Assign Resources
+              </Button>
+            </div>
+
+            {assignedResources.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {assignedResources.map((resource, index) => (
+                  <motion.a
+                    key={resource.id}
+                    href={resource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="block bg-white rounded-xl border border-slate-100 p-5 hover:shadow-lg hover:border-slate-200 transition-all group"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className={`p-2 rounded-lg ${resource.featured ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-600'}`}>
+                        {resource.featured ? <Star className="w-5 h-5" /> : <BookOpen className="w-5 h-5" />}
+                      </div>
+                      <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
+                    </div>
+                    
+                    <h4 className="font-semibold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">
+                      {resource.title}
+                    </h4>
+                    
+                    {resource.description && (
+                      <p className="text-sm text-slate-600 mb-3 line-clamp-2">{resource.description}</p>
+                    )}
+                    
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-violet-100 text-violet-700">
+                        {resource.category}
+                      </Badge>
+                      <Badge variant="outline" className="text-xs capitalize">
+                        {resource.type}
+                      </Badge>
+                    </div>
+                  </motion.a>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-white rounded-xl border border-slate-100">
+                <BookOpen className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                <p className="text-slate-500 mb-4">No resources assigned yet</p>
+                <Button 
+                  variant="link"
+                  onClick={() => setShowResourceDialog(true)}
+                >
+                  Assign the first resource
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+
           {/* Notes Tab */}
           <TabsContent value="notes" className="space-y-4">
             <div className="bg-white rounded-xl border border-slate-100 p-6">
@@ -577,6 +666,14 @@ export default function ClientDetail() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Resource Assignment Dialog */}
+      <ResourceAssignmentDialog
+        open={showResourceDialog}
+        onClose={() => setShowResourceDialog(false)}
+        clientId={clientId}
+        clientName={client.name}
+      />
     </div>
   );
 }

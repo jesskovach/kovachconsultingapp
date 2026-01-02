@@ -1,8 +1,36 @@
 import { motion } from "framer-motion";
 import { BookOpen, Video, Book, Wrench, FileText, ExternalLink, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { base44 } from "@/api/base44Client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-export default function PortalResources({ resources }) {
+export default function PortalResources({ resources, clientId }) {
+  const queryClient = useQueryClient();
+
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["resource-assignments", clientId],
+    queryFn: () => base44.entities.ResourceAssignment.filter({ client_id: clientId }),
+    enabled: !!clientId
+  });
+
+  const markViewedMutation = useMutation({
+    mutationFn: (assignmentId) => 
+      base44.entities.ResourceAssignment.update(assignmentId, {
+        viewed: true,
+        viewed_date: new Date().toISOString()
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["resource-assignments"] });
+    }
+  });
+
+  const handleResourceClick = (resourceId) => {
+    const assignment = assignments.find(a => a.resource_id === resourceId);
+    if (assignment && !assignment.viewed) {
+      markViewedMutation.mutate(assignment.id);
+    }
+  };
+
   const getTypeIcon = (type) => {
     switch (type) {
       case 'video': return <Video className="w-5 h-5" />;
@@ -33,6 +61,7 @@ export default function PortalResources({ resources }) {
               href={resource.url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => handleResourceClick(resource.id)}
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: index * 0.05 }}
