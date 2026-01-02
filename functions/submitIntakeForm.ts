@@ -28,16 +28,37 @@ Deno.serve(async (req) => {
         }, { status: 403 });
       }
     } else {
-      // Option 2: For unauthenticated access, require a verification token
-      // This token should be generated when the welcome email is sent and verified here
+      // Option 2: For unauthenticated access, require a cryptographically signed token
       if (!verificationToken) {
         return Response.json({ 
           error: 'Verification token required for unauthenticated submissions' 
         }, { status: 401 });
       }
       
-      // Verify token matches client (simplified - in production use cryptographic signing)
-      const expectedToken = `${clientId}-${client.email}`.substring(0, 32);
+      // Verify token using cryptographic HMAC signature
+      const secret = Deno.env.get("INTAKE_TOKEN_SECRET");
+      if (!secret) {
+        return Response.json({ 
+          error: 'Server configuration error: Token verification unavailable' 
+        }, { status: 500 });
+      }
+      
+      // Generate expected token using HMAC-SHA256
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(secret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+      
+      const data = encoder.encode(`${clientId}:${client.email}`);
+      const signature = await crypto.subtle.sign("HMAC", key, data);
+      const expectedToken = Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      
       if (verificationToken !== expectedToken) {
         return Response.json({ 
           error: 'Invalid verification token' 

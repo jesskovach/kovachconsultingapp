@@ -9,6 +9,13 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // ADMIN ONLY: Exporting aggregated data requires admin privileges
+        if (user.role !== 'admin') {
+            return Response.json({ 
+                error: 'Forbidden: Admin access required to export reports' 
+            }, { status: 403 });
+        }
+
         const { reportType } = await req.json();
 
         let csvData = '';

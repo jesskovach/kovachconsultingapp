@@ -9,6 +9,13 @@ Deno.serve(async (req) => {
             return Response.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // ADMIN ONLY: Only coaches/admins can send onboarding emails
+        if (user.role !== 'admin') {
+            return Response.json({ 
+                error: 'Forbidden: Admin access required to send onboarding emails' 
+            }, { status: 403 });
+        }
+
         const { clientId, type } = await req.json();
 
         if (!clientId || !type) {
