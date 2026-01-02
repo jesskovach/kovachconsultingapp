@@ -1,12 +1,14 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { 
   LayoutDashboard, Users, Calendar, Target, 
   Menu, X, ChevronRight, ClipboardCheck, BarChart3, CreditCard, Bell, BookOpen, FileText
 } from "lucide-react";
 import NotificationBell from "@/components/notifications/NotificationBell";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 
 const navigation = [
   { name: "Dashboard", href: "Dashboard", icon: LayoutDashboard },
@@ -24,6 +26,33 @@ const navigation = [
 
 export default function Layout({ children, currentPageName }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me()
+  });
+
+  // Redirect non-admin users to ClientPortal
+  useEffect(() => {
+    if (!isLoading && user && user.role !== 'admin' && currentPageName !== 'ClientPortal' && currentPageName !== 'ClientIntake') {
+      navigate(createPageUrl('ClientPortal'));
+    }
+  }, [user, isLoading, currentPageName, navigate]);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // For non-admin users, render without the admin sidebar
+  if (user && user.role !== 'admin') {
+    return <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">{children}</div>;
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
