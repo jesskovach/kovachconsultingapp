@@ -291,11 +291,15 @@ export default function OnboardingDetail() {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <p className="text-sm text-slate-500 mb-3">No discovery session scheduled</p>
+                  <Circle className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500 mb-3">No discovery session scheduled yet</p>
+                  <p className="text-xs text-slate-400 mb-4">
+                    Once the client completes the intake form, schedule their first session
+                  </p>
                   <Link to={createPageUrl("Sessions")}>
                     <Button size="sm" variant="outline">
                       <Calendar className="w-4 h-4 mr-2" />
-                      Schedule Now
+                      Schedule Discovery Session
                     </Button>
                   </Link>
                 </div>
