@@ -243,7 +243,10 @@ export default function Dashboard() {
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: index * 0.05 }}
                           className="bg-white/10 backdrop-blur-sm rounded-lg p-3 cursor-pointer hover:bg-white/20 transition-colors"
-                          onClick={() => window.location.href = createPageUrl("ClientDetail") + `?id=${message.client_id}`}
+                          onClick={async () => {
+                            await base44.entities.Message.update(message.id, { read: true });
+                            window.location.href = createPageUrl("ClientDetail") + `?id=${message.client_id}`;
+                          }}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="flex-1 min-w-0">
