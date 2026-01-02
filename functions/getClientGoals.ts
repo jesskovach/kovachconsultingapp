@@ -15,9 +15,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Client ID is required' }, { status: 400 });
     }
 
-    // Check if user is a coach/admin or the client themselves
+    // Verify access permissions
     if (user.role !== 'admin') {
-      // If not admin, verify they're accessing their own client record
+      // Non-admin users must have matching client_id in their user record
+      if (!user.client_id || user.client_id !== clientId) {
+        return Response.json({ 
+          error: 'Access denied. You can only view your own goals.' 
+        }, { status: 403 });
+      }
+      
+      // Double-check client record exists and matches user email
       const clients = await base44.entities.Client.filter({ 
         id: clientId, 
         email: user.email 
@@ -25,12 +32,12 @@ Deno.serve(async (req) => {
       
       if (clients.length === 0) {
         return Response.json({ 
-          error: 'Access denied. You can only view your own goals.' 
+          error: 'Access denied. Client record verification failed.' 
         }, { status: 403 });
       }
     }
 
-    // Fetch goals for the client
+    // Use service role to fetch goals after authorization check
     const goals = await base44.asServiceRole.entities.Goal.filter({ 
       client_id: clientId 
     }, '-created_date');
