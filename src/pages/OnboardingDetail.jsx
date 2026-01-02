@@ -54,13 +54,15 @@ export default function OnboardingDetail() {
       });
       return questionnaires[0];
     },
-    enabled: !!checklist?.client_id
+    enabled: !!checklist?.client_id,
+    staleTime: 30000
   });
 
   const { data: sessions = [] } = useQuery({
     queryKey: ["sessions", checklist?.client_id],
     queryFn: () => base44.entities.Session.filter({ client_id: checklist.client_id }),
-    enabled: !!checklist?.client_id
+    enabled: !!checklist?.client_id,
+    staleTime: 30000
   });
 
   const updateChecklistMutation = useMutation({
