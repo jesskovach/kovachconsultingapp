@@ -1,35 +1,37 @@
 import ClientDetail from './pages/ClientDetail';
+import ClientIntake from './pages/ClientIntake';
 import ClientPortal from './pages/ClientPortal';
 import Clients from './pages/Clients';
 import Dashboard from './pages/Dashboard';
 import Onboarding from './pages/Onboarding';
 import OnboardingDetail from './pages/OnboardingDetail';
-import Pipeline from './pages/Pipeline';
-import Reports from './pages/Reports';
-import Sessions from './pages/Sessions';
-import PaymentSettings from './pages/PaymentSettings';
-import ReminderSettings from './pages/ReminderSettings';
-import ClientIntake from './pages/ClientIntake';
-import Resources from './pages/Resources';
 import OnboardingTemplates from './pages/OnboardingTemplates';
+import PaymentSettings from './pages/PaymentSettings';
+import Pipeline from './pages/Pipeline';
+import ReminderSettings from './pages/ReminderSettings';
+import Reports from './pages/Reports';
+import Resources from './pages/Resources';
+import Sessions from './pages/Sessions';
+import ClientHistory from './pages/ClientHistory';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
     "ClientDetail": ClientDetail,
+    "ClientIntake": ClientIntake,
     "ClientPortal": ClientPortal,
     "Clients": Clients,
     "Dashboard": Dashboard,
     "Onboarding": Onboarding,
     "OnboardingDetail": OnboardingDetail,
-    "Pipeline": Pipeline,
-    "Reports": Reports,
-    "Sessions": Sessions,
-    "PaymentSettings": PaymentSettings,
-    "ReminderSettings": ReminderSettings,
-    "ClientIntake": ClientIntake,
-    "Resources": Resources,
     "OnboardingTemplates": OnboardingTemplates,
+    "PaymentSettings": PaymentSettings,
+    "Pipeline": Pipeline,
+    "ReminderSettings": ReminderSettings,
+    "Reports": Reports,
+    "Resources": Resources,
+    "Sessions": Sessions,
+    "ClientHistory": ClientHistory,
 }
 
 export const pagesConfig = {

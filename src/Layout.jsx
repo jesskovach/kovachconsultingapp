@@ -12,6 +12,7 @@ const navigation = [
   { name: "Dashboard", href: "Dashboard", icon: LayoutDashboard },
   { name: "Clients", href: "Clients", icon: Users },
   { name: "Sessions", href: "Sessions", icon: Calendar },
+  { name: "History", href: "ClientHistory", icon: FileText },
   { name: "Onboarding", href: "Onboarding", icon: ClipboardCheck },
   { name: "Templates", href: "OnboardingTemplates", icon: FileText },
   { name: "Pipeline", href: "Pipeline", icon: Target },
