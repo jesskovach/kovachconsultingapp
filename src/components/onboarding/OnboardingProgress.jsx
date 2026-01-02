@@ -12,6 +12,7 @@ export default function OnboardingProgress({ checklist }) {
   const statusColors = {
     not_started: "bg-slate-100 text-slate-600",
     in_progress: "bg-blue-100 text-blue-700",
+    blocked: "bg-amber-100 text-amber-700",
     completed: "bg-emerald-100 text-emerald-700"
   };
 
@@ -20,9 +21,12 @@ export default function OnboardingProgress({ checklist }) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h3 className="font-semibold text-slate-800">Onboarding Progress</h3>
-          <p className="text-sm text-slate-500 mt-1">
-            {completedTasks} of {totalTasks} tasks completed
-          </p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-2xl font-bold text-slate-800">{Math.round(progress)}%</p>
+            <p className="text-sm text-slate-500">
+              {completedTasks} of {totalTasks} tasks completed
+            </p>
+          </div>
         </div>
         <div className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[checklist.status]}`}>
           {checklist.status.replace("_", " ")}
