@@ -46,6 +46,8 @@ export default function Clients() {
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const client = await base44.entities.Client.create(data);
+      // Invite user with role="user" (not admin) so they can access the client portal
+      await base44.users.inviteUser(client.email, "user");
       // Send welcome email for new clients
       await base44.functions.invoke("sendWelcomeEmail", { clientId: client.id });
       return client;
