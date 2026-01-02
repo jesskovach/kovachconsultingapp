@@ -274,6 +274,9 @@ export default function Dashboard() {
 
           {/* Right Column - Clients & Team */}
           <div className="space-y-8">
+            {/* Follow-Up Reminders */}
+            <FollowUpReminders />
+
             {/* Recent Clients */}
             <div>
             <div className="flex items-center justify-between mb-4">
