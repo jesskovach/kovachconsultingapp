@@ -10,21 +10,25 @@ export default function PaymentButton({ clientId, amount, description, type = "s
   const handlePayment = async () => {
     try {
       setLoading(true);
-      const { data } = await base44.functions.invoke('createStripeCheckout', {
+      const response = await base44.functions.invoke('createStripeCheckout', {
         clientId,
         amount,
         description,
         type
       });
 
-      if (data.url) {
-        window.location.href = data.url;
+      console.log('Stripe response:', response);
+
+      if (response.data?.url) {
+        window.location.href = response.data.url;
+      } else if (response.data?.error) {
+        toast.error(response.data.error);
       } else {
         toast.error('Failed to create checkout session');
       }
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error('Failed to initiate payment');
+      toast.error(error.message || 'Failed to initiate payment');
     } finally {
       setLoading(false);
     }
