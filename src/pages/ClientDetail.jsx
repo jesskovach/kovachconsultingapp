@@ -32,6 +32,8 @@ import ClientForm from "@/components/clients/ClientForm";
 import SessionForm from "@/components/sessions/SessionForm";
 import GoalForm from "@/components/goals/GoalForm";
 import GoalCard from "@/components/goals/GoalCard";
+import CalendarSyncButton from "@/components/calendar/CalendarSyncButton";
+import PaymentHistory from "@/components/payments/PaymentHistory";
 
 export default function ClientDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -257,6 +259,9 @@ export default function ClientDetail() {
               <Target className="w-4 h-4 mr-2" />
               Goals ({goals.length})
             </TabsTrigger>
+            <TabsTrigger value="payments" className="data-[state=active]:bg-slate-100">
+              Payments
+            </TabsTrigger>
             <TabsTrigger value="notes" className="data-[state=active]:bg-slate-100">
               Notes
             </TabsTrigger>
@@ -300,14 +305,18 @@ export default function ClientDetail() {
                             <span className="text-sm text-slate-500 capitalize">{session.type}</span>
                           </div>
                           <p className="text-sm text-slate-500 mt-1">
-                            {format(new Date(session.date), "h:mm a")} · {session.duration || 60} min
+                          {format(new Date(session.date), "h:mm a")} · {session.duration || 60} min
                           </p>
                           {session.notes && (
-                            <p className="text-sm text-slate-600 mt-2 line-clamp-2">{session.notes}</p>
+                          <p className="text-sm text-slate-600 mt-2 line-clamp-2">{session.notes}</p>
                           )}
-                        </div>
-                      </div>
-                      <DropdownMenu>
+                          </div>
+                          </div>
+                          <div className="flex flex-col gap-2">
+                          {session.status === 'scheduled' && (
+                          <CalendarSyncButton session={session} />
+                          )}
+                          <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" className="h-8 w-8">
                             <MoreHorizontal className="w-4 h-4" />
@@ -405,6 +414,11 @@ export default function ClientDetail() {
                 </Button>
               </div>
             )}
+          </TabsContent>
+
+          {/* Payments Tab */}
+          <TabsContent value="payments">
+            <PaymentHistory clientId={clientId} />
           </TabsContent>
 
           {/* Notes Tab */}

@@ -3,8 +3,10 @@ import { Calendar, Clock, Video, FileText } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import CalendarSyncButton from "@/components/calendar/CalendarSyncButton";
+import PaymentButton from "@/components/payments/PaymentButton";
 
-export default function PortalSessions({ sessions, onProvideFeedback }) {
+export default function PortalSessions({ sessions, onProvideFeedback, clientId, clientName }) {
   const statusColors = {
     scheduled: "bg-blue-100 text-blue-700",
     completed: "bg-emerald-100 text-emerald-700",
@@ -44,7 +46,19 @@ export default function PortalSessions({ sessions, onProvideFeedback }) {
                       <p className="text-xs text-slate-500 mt-1 capitalize">{session.type} session</p>
                     </div>
                   </div>
-                  <Video className="w-5 h-5 text-blue-600" />
+                  <div className="flex flex-col gap-2">
+                    <CalendarSyncButton session={session} size="sm" />
+                    {clientId && clientName && (
+                      <PaymentButton
+                        amount={150}
+                        description={`Coaching Session - ${format(new Date(session.date), "MMM d, yyyy")}`}
+                        clientId={clientId}
+                        clientName={clientName}
+                        sessionId={session.id}
+                        size="sm"
+                      />
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ))}
