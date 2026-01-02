@@ -63,9 +63,23 @@ export default function ClientPortal() {
     enabled: !!client
   });
 
+  const { data: assignedResourceIds = [] } = useQuery({
+    queryKey: ["resource-assignments", client?.id],
+    queryFn: async () => {
+      const assignments = await base44.entities.ResourceAssignment.filter({ client_id: client.id });
+      return assignments.map(a => a.resource_id);
+    },
+    enabled: !!client
+  });
+
   const { data: resources = [] } = useQuery({
-    queryKey: ["resources"],
-    queryFn: () => base44.entities.Resource.list("-created_date")
+    queryKey: ["assignedResources", client?.id],
+    queryFn: async () => {
+      if (assignedResourceIds.length === 0) return [];
+      const allResources = await base44.entities.Resource.list();
+      return allResources.filter(r => assignedResourceIds.includes(r.id));
+    },
+    enabled: !!client && assignedResourceIds.length > 0
   });
 
   const feedbackMutation = useMutation({
