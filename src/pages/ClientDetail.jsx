@@ -75,7 +75,10 @@ export default function ClientDetail() {
 
   const { data: goals = [] } = useQuery({
     queryKey: ["goals", clientId],
-    queryFn: () => base44.entities.Goal.filter({ client_id: clientId }),
+    queryFn: async () => {
+      const response = await base44.functions.invoke('getClientGoals', { clientId });
+      return response.data.goals || [];
+    },
     enabled: !!clientId
   });
 
