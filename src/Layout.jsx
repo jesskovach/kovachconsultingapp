@@ -4,6 +4,7 @@ import {
   LayoutDashboard, Users, Calendar, Target, 
   Menu, X, ChevronRight, ClipboardCheck, BarChart3, CreditCard, Bell, BookOpen, FileText, LogOut
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
