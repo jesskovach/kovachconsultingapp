@@ -81,24 +81,74 @@ Deno.serve(async (req) => {
 
     // Send welcome email
     const emailBody = `
-Dear ${client.name},
-
-Welcome to our coaching program! We're excited to begin this journey with you.
-
-To get started, please complete your client intake form by clicking the link below:
-
-${intakeFormUrl}
-
-This form will help us understand your goals, challenges, and what you hope to achieve through our coaching partnership. It should take about 10-15 minutes to complete.
-
-Once you've submitted the form, we'll review your responses and reach out to schedule your first discovery session.
-
-If you have any questions, please don't hesitate to reach out.
-
-Looking forward to working with you!
-
-Best regards,
-Your Coaching Team
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { margin-bottom: 30px; }
+        .content { margin-bottom: 20px; }
+        .button { 
+            display: inline-block;
+            background-color: #1e293b;
+            color: white !important;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-weight: 600;
+        }
+        .info-box {
+            background-color: #f8fafc;
+            border-left: 4px solid #1e293b;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .footer { 
+            margin-top: 40px; 
+            padding-top: 20px; 
+            border-top: 1px solid #e2e8f0;
+            font-size: 14px;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2 style="color: #1e293b; margin-bottom: 10px;">Welcome to Your Coaching Journey!</h2>
+        </div>
+        
+        <div class="content">
+            <p>Dear ${client.name},</p>
+            
+            <p>Welcome to our coaching program! We're excited to begin this journey with you.</p>
+            
+            <p>To get started, please complete your client intake form:</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="${intakeFormUrl}" class="button">Complete Intake Form</a>
+            </div>
+            
+            <div class="info-box">
+                <p style="margin: 0;"><strong>What to expect:</strong></p>
+                <p style="margin: 5px 0 0 0;">This form will help us understand your goals, challenges, and what you hope to achieve through our coaching partnership. It should take about <strong>10-15 minutes</strong> to complete.</p>
+            </div>
+            
+            <p>Once you've submitted the form, we'll review your responses and reach out to schedule your first discovery session.</p>
+            
+            <p>If you have any questions, please don't hesitate to reach out.</p>
+            
+            <p><strong>Looking forward to working with you!</strong></p>
+        </div>
+        
+        <div class="footer">
+            <p>Best regards,<br>Your Coaching Team</p>
+        </div>
+    </div>
+</body>
+</html>
     `.trim();
 
     await base44.asServiceRole.integrations.Core.SendEmail({
