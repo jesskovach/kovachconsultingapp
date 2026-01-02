@@ -9,6 +9,7 @@ import Reports from './pages/Reports';
 import Sessions from './pages/Sessions';
 import PaymentSettings from './pages/PaymentSettings';
 import ReminderSettings from './pages/ReminderSettings';
+import ClientIntake from './pages/ClientIntake';
 import __Layout from './Layout.jsx';
 
 
@@ -24,6 +25,7 @@ export const PAGES = {
     "Sessions": Sessions,
     "PaymentSettings": PaymentSettings,
     "ReminderSettings": ReminderSettings,
+    "ClientIntake": ClientIntake,
 }
 
 export const pagesConfig = {
