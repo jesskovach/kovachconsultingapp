@@ -74,9 +74,16 @@ export default function PortalMessaging({ messages, clientId, currentUser }) {
     });
   };
 
+  // Mark messages as read when viewing
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    
+    // Mark unread messages from others as read
+    const unreadMessages = messages.filter(m => !m.read && m.sender_email !== currentUser.email);
+    unreadMessages.forEach(msg => {
+      base44.entities.Message.update(msg.id, { read: true });
+    });
+  }, [messages, currentUser]);
 
   return (
     <div className="flex flex-col h-[600px] bg-white rounded-xl border border-slate-100">
