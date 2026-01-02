@@ -41,7 +41,6 @@ import ResourceAssignmentDialog from "@/components/resources/ResourceAssignmentD
 import EmailComposer from "@/components/emails/EmailComposer";
 import EmailThread from "@/components/emails/EmailThread";
 import PortalMessaging from "@/components/portal/PortalMessaging";
-import { MessageSquare } from "lucide-react";
 
 export default function ClientDetail() {
   const urlParams = new URLSearchParams(window.location.search);
