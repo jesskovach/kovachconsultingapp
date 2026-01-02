@@ -2,14 +2,17 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { CreditCard, DollarSign, TrendingUp, CheckCircle } from "lucide-react";
+import { CreditCard, DollarSign, TrendingUp, CheckCircle, ExternalLink, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import PaymentHistory from "@/components/payments/PaymentHistory";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 
 export default function PaymentSettings() {
   const [selectedClient, setSelectedClient] = useState(null);
+
+  const webhookUrl = `${window.location.origin}/api/functions/stripeWebhook`;
 
   const { data: payments = [] } = useQuery({
     queryKey: ["allPayments"],
@@ -35,6 +38,47 @@ export default function PaymentSettings() {
           <h1 className="text-3xl font-bold text-slate-800">Payments</h1>
           <p className="text-slate-500 mt-1">Track client payments and revenue</p>
         </div>
+
+        {/* Stripe Setup Info */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-blue-50 border border-blue-200 rounded-xl p-6 mb-8"
+        >
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+              <CreditCard className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-semibold text-blue-900 mb-2">Stripe Webhook Setup</h3>
+              <p className="text-sm text-blue-800 mb-4">
+                Configure your Stripe webhook to receive payment notifications:
+              </p>
+              <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside mb-4">
+                <li>Go to <a href="https://dashboard.stripe.com/webhooks" target="_blank" rel="noopener noreferrer" className="underline font-medium">Stripe Webhooks Dashboard</a></li>
+                <li>Click "Add endpoint"</li>
+                <li>Copy and paste the webhook URL below</li>
+                <li>Select events: <code className="bg-blue-100 px-1 rounded">checkout.session.completed</code>, <code className="bg-blue-100 px-1 rounded">checkout.session.expired</code></li>
+                <li>Copy the webhook signing secret and add it to your secrets</li>
+              </ol>
+              <div className="bg-white rounded-lg p-3 border border-blue-200">
+                <div className="flex items-center justify-between gap-3">
+                  <code className="text-sm text-slate-800 break-all">{webhookUrl}</code>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(webhookUrl);
+                      toast.success('Webhook URL copied');
+                    }}
+                  >
+                    <Copy className="w-4 h-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
