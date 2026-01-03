@@ -22,7 +22,9 @@ export default function ClientPortal() {
   const [editingGoal, setEditingGoal] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: user, refetch: refetchUser } = useQuery({
+  const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me()
   });
@@ -41,13 +43,15 @@ export default function ClientPortal() {
       if (clients.length > 0) {
         // Auto-link user to client
         await base44.auth.updateMe({ client_id: clients[0].id });
-        await refetchUser(); // Refresh user data
+        // Refresh user data
+        queryClient.invalidateQueries({ queryKey: ["currentUser"] });
         return clients[0];
       }
       
       return null;
     },
-    enabled: !!user
+    enabled: !!user,
+    retry: 1
   });
 
   const { data: goals = [] } = useQuery({
