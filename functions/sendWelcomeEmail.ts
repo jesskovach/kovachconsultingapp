@@ -75,9 +75,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get app base URL
-    const appUrl = Deno.env.get("APP_URL") || "https://app.base44.com";
-    const intakeFormUrl = `${appUrl}/#/ClientIntake?clientId=${clientId}`;
+    // Get app base URL from environment
+    const appId = Deno.env.get("BASE44_APP_ID");
+    const intakeFormUrl = `https://${appId}.base44.app/#/ClientIntake?clientId=${clientId}`;
 
     // Send welcome email
     const emailBody = `
