@@ -115,11 +115,20 @@ export default function Clients() {
     }
   });
 
-  const handleSubmit = (data) => {
-    if (editingClient) {
-      updateMutation.mutate({ id: editingClient.id, data });
-    } else {
-      createMutation.mutate(data);
+  const handleSubmit = async (data) => {
+    try {
+      console.log('handleSubmit called with:', data);
+      
+      if (editingClient) {
+        await updateMutation.mutateAsync({ id: editingClient.id, data });
+      } else {
+        await createMutation.mutateAsync(data);
+      }
+      
+      console.log('Mutation completed successfully');
+    } catch (error) {
+      console.error('handleSubmit error:', error);
+      alert(`Failed to save client: ${error?.message || JSON.stringify(error)}`);
     }
   };
 
