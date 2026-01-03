@@ -14,6 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Loader2, BookOpen, Video, Book, Wrench, FileText } from "lucide-react";
 import { toast } from "sonner";
 
@@ -45,15 +46,20 @@ export default function ResourceAssignmentDialog({ open, onClose, clientId, clie
           resource_id: resourceId,
           client_id: clientId,
           assigned_by: user.email,
-          notes: notes
+          notes: notes,
+          required: requiredResources.includes(resourceId),
+          onboarding_stage: onboardingStages[resourceId] || null
         })
       );
       return Promise.all(promises);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resource-assignments"] });
+      queryClient.invalidateQueries({ queryKey: ["assignedResources"] });
       toast.success("Resources assigned successfully");
       setSelectedResources([]);
+      setRequiredResources([]);
+      setOnboardingStages({});
       setNotes("");
       onClose();
     },
@@ -133,7 +139,7 @@ export default function ResourceAssignmentDialog({ open, onClose, clientId, clie
               return (
                 <div
                   key={resource.id}
-                  className={`flex items-start gap-3 p-3 rounded-lg border transition-all ${
+                  className={`p-3 rounded-lg border transition-all ${
                     isAssigned 
                       ? "bg-slate-50 border-slate-200 opacity-50" 
                       : isSelected
@@ -141,36 +147,77 @@ export default function ResourceAssignmentDialog({ open, onClose, clientId, clie
                       : "bg-white border-slate-100 hover:border-slate-200"
                   }`}
                 >
-                  <Checkbox
-                    id={resource.id}
-                    checked={isSelected}
-                    onCheckedChange={() => !isAssigned && toggleResource(resource.id)}
-                    disabled={isAssigned}
-                    className="mt-1"
-                  />
-                  <div className="flex-1">
-                    <label
-                      htmlFor={resource.id}
-                      className={`flex items-center gap-2 mb-1 ${isAssigned ? "cursor-not-allowed" : "cursor-pointer"}`}
-                    >
-                      {getTypeIcon(resource.type)}
-                      <span className="font-medium text-slate-800">{resource.title}</span>
-                      {isAssigned && (
-                        <Badge variant="outline" className="ml-auto">Already Assigned</Badge>
+                  <div className="flex items-start gap-3 mb-3">
+                    <Checkbox
+                      id={resource.id}
+                      checked={isSelected}
+                      onCheckedChange={() => !isAssigned && toggleResource(resource.id)}
+                      disabled={isAssigned}
+                      className="mt-1"
+                    />
+                    <div className="flex-1">
+                      <label
+                        htmlFor={resource.id}
+                        className={`flex items-center gap-2 mb-1 ${isAssigned ? "cursor-not-allowed" : "cursor-pointer"}`}
+                      >
+                        {getTypeIcon(resource.type)}
+                        <span className="font-medium text-slate-800">{resource.title}</span>
+                        {isAssigned && (
+                          <Badge variant="outline" className="ml-auto">Already Assigned</Badge>
+                        )}
+                      </label>
+                      {resource.description && (
+                        <p className="text-sm text-slate-600 mb-2">{resource.description}</p>
                       )}
-                    </label>
-                    {resource.description && (
-                      <p className="text-sm text-slate-600 mb-2">{resource.description}</p>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <Badge className={categoryColors[resource.category]} variant="secondary">
-                        {resource.category}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs capitalize">
-                        {resource.type}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={categoryColors[resource.category]} variant="secondary">
+                          {resource.category}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs capitalize">
+                          {resource.type}
+                        </Badge>
+                        {resource.tags?.slice(0, 2).map(tag => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
+
+                  {/* Additional options for selected resources */}
+                  {isSelected && !isAssigned && (
+                    <div className="ml-9 space-y-3 pt-3 border-t border-slate-200">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id={`required-${resource.id}`}
+                          checked={requiredResources.includes(resource.id)}
+                          onCheckedChange={() => toggleRequired(resource.id)}
+                        />
+                        <Label htmlFor={`required-${resource.id}`} className="text-sm font-medium cursor-pointer">
+                          Mark as Required
+                        </Label>
+                      </div>
+                      <div>
+                        <Label className="text-sm text-slate-600 mb-1.5 block">Onboarding Stage</Label>
+                        <Select 
+                          value={onboardingStages[resource.id] || ""} 
+                          onValueChange={(stage) => setOnboardingStage(resource.id, stage)}
+                        >
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="Select stage (optional)" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="discovery">Discovery</SelectItem>
+                            <SelectItem value="initial">Initial</SelectItem>
+                            <SelectItem value="mid_engagement">Mid Engagement</SelectItem>
+                            <SelectItem value="completion">Completion</SelectItem>
+                            <SelectItem value="general">General</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
