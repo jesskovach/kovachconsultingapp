@@ -53,7 +53,9 @@ export default function Dashboard() {
 
   const { data: onboardingChecklists = [] } = useQuery({
     queryKey: ["onboarding-checklists"],
-    queryFn: () => base44.entities.OnboardingChecklist.list()
+    queryFn: () => base44.entities.OnboardingChecklist.filter({
+      status: { $in: ["in_progress", "not_started", "blocked"] }
+    })
   });
 
   const { data: users = [] } = useQuery({
@@ -70,7 +72,7 @@ export default function Dashboard() {
   const completedSessions = sessions.filter((s) => s.status === "completed");
   const activeGoals = goals.filter((g) => g.status === "in_progress");
   const recentNotifications = notifications.slice(0, 5);
-  const pendingOnboarding = onboardingChecklists.filter(c => c.status === "in_progress" || c.status === "blocked").length;
+  const pendingOnboarding = onboardingChecklists.length;
   
   // Team performance
   const tasksCompletedByUser = {};
