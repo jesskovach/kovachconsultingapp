@@ -34,10 +34,32 @@ export default function Team() {
 
   const inviteMutation = useMutation({
     mutationFn: async ({ email, role }) => {
+      // First, invite the user
       await base44.users.inviteUser(email, role);
+      
+      // If role is 'user' (client portal access), create a Client record
+      if (role === 'user') {
+        // Check if client already exists
+        const existingClients = await base44.entities.Client.filter({ email });
+        if (existingClients.length === 0) {
+          // Extract name from email for initial setup
+          const name = email.split('@')[0].split('.').map(w => 
+            w.charAt(0).toUpperCase() + w.slice(1)
+          ).join(' ');
+          
+          // Create pending client record
+          await base44.entities.Client.create({
+            name,
+            email,
+            status: 'prospect',
+            pipeline_stage: 'lead'
+          });
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["allUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowInviteDialog(false);
       setInviteEmail("");
       setInviteRole("user");
