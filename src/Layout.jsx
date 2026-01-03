@@ -20,6 +20,7 @@ const navigation = [
   { name: "Templates", href: "OnboardingTemplates", icon: FileText },
   { name: "Pipeline", href: "Pipeline", icon: Target },
   { name: "Resources", href: "Resources", icon: BookOpen },
+  { name: "Team", href: "Team", icon: Users },
   { name: "Payments", href: "PaymentSettings", icon: CreditCard },
   { name: "Calendly", href: "CalendlySettings", icon: Calendar },
   { name: "Reminders", href: "ReminderSettings", icon: Bell },

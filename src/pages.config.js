@@ -14,6 +14,7 @@ import ReminderSettings from './pages/ReminderSettings';
 import Reports from './pages/Reports';
 import Resources from './pages/Resources';
 import Sessions from './pages/Sessions';
+import Team from './pages/Team';
 import __Layout from './Layout.jsx';
 
 
@@ -34,6 +35,7 @@ export const PAGES = {
     "Reports": Reports,
     "Resources": Resources,
     "Sessions": Sessions,
+    "Team": Team,
 }
 
 export const pagesConfig = {
