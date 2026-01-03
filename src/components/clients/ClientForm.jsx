@@ -20,8 +20,10 @@ export default function ClientForm({ open, onClose, onSubmit, initialData, isLoa
     notes: ""
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    console.log('Form submitted with raw data:', formData);
     
     // Clean up form data: convert empty strings to null for optional fields
     const cleanedData = {
@@ -38,7 +40,15 @@ export default function ClientForm({ open, onClose, onSubmit, initialData, isLoa
       cleanedData.start_date = new Date().toISOString().split('T')[0];
     }
     
-    onSubmit(cleanedData);
+    console.log('Submitting cleaned data:', cleanedData);
+    
+    try {
+      await onSubmit(cleanedData);
+      console.log('onSubmit completed successfully');
+    } catch (error) {
+      console.error('onSubmit error:', error);
+      alert(`Error: ${error.message || error}`);
+    }
   };
 
   const handleChange = (field, value) => {
