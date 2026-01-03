@@ -31,7 +31,14 @@ export default function ClientPortal() {
     queryKey: ["clientByEmail", user?.email],
     queryFn: async () => {
       const clients = await base44.entities.Client.filter({ email: user.email });
-      return clients.length > 0 ? clients[0] : null;
+      if (clients.length > 0) {
+        // Auto-link user to client if not already linked
+        if (!user.client_id) {
+          await base44.auth.updateMe({ client_id: clients[0].id });
+        }
+        return clients[0];
+      }
+      return null;
     },
     enabled: !!user
   });
