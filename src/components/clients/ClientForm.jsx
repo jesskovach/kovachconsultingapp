@@ -22,7 +22,23 @@ export default function ClientForm({ open, onClose, onSubmit, initialData, isLoa
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Clean up form data: convert empty strings to null for optional fields
+    const cleanedData = {
+      ...formData,
+      phone: formData.phone?.trim() || null,
+      company: formData.company?.trim() || null,
+      role: formData.role?.trim() || null,
+      coaching_focus: formData.coaching_focus?.trim() || null,
+      notes: formData.notes?.trim() || null
+    };
+    
+    // Set start_date when status changes to 'active' for the first time
+    if (cleanedData.status === 'active' && (!initialData || initialData.status !== 'active') && !initialData?.start_date) {
+      cleanedData.start_date = new Date().toISOString().split('T')[0];
+    }
+    
+    onSubmit(cleanedData);
   };
 
   const handleChange = (field, value) => {

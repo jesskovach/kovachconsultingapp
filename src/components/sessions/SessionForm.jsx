@@ -42,10 +42,16 @@ export default function SessionForm({ open, onClose, onSubmit, initialData, clie
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit({
+    
+    // Clean up form data
+    const cleanedData = {
       ...formData,
-      date: new Date(formData.date).toISOString()
-    });
+      date: new Date(formData.date).toISOString(),
+      notes: formData.notes?.trim() || null,
+      outcomes: formData.outcomes?.trim() || null
+    };
+    
+    onSubmit(cleanedData);
   };
 
   const handleChange = (field, value) => {

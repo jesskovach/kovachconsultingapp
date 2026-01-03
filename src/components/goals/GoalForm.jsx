@@ -41,7 +41,15 @@ export default function GoalForm({ open, onClose, onSubmit, initialData, clientI
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    // Clean up form data: convert empty string to null for target_date
+    const cleanedData = {
+      ...formData,
+      target_date: formData.target_date?.trim() || null,
+      description: formData.description?.trim() || null
+    };
+    
+    onSubmit(cleanedData);
   };
 
   const handleChange = (field, value) => {
