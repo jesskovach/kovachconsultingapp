@@ -7,7 +7,10 @@ import { toast } from "sonner";
 export default function PaymentButton({ clientId, amount, description, type = "session", sessionId, size = "default", variant = "default", children }) {
   const [loading, setLoading] = useState(false);
 
+  console.log('PaymentButton rendered - NEW VERSION with alerts');
+
   const handlePayment = async () => {
+    alert('handlePayment called!');
     try {
       console.log('=== PAYMENT BUTTON CLICKED ===');
       console.log('Payment params:', { clientId, amount, description, type, sessionId });
