@@ -10,22 +10,27 @@ export default function CalendarSyncButton({ session, variant = "outline", size 
 
   const syncGoogleMutation = useMutation({
     mutationFn: async () => {
-      const { data } = await base44.functions.invoke('syncGoogleCalendar', {
+      const response = await base44.functions.invoke('syncGoogleCalendar', {
         sessionId: session.id,
         action: 'create'
       });
-      return data;
+      return response.data;
     },
     onSuccess: (data) => {
+      if (data?.error) {
+        toast.error("Failed to sync: " + data.error);
+        return;
+      }
       toast.success("Session added to Google Calendar!", {
-        action: data.eventLink ? {
+        action: data?.eventLink ? {
           label: "View Event",
           onClick: () => window.open(data.eventLink, '_blank')
         } : undefined
       });
     },
     onError: (error) => {
-      toast.error("Failed to sync with Google Calendar: " + error.message);
+      console.error("Calendar sync error:", error);
+      toast.error("Failed to sync with Google Calendar: " + (error.message || "Unknown error"));
     }
   });
 
