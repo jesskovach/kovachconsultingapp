@@ -29,7 +29,8 @@ export default function Team() {
     queryFn: async () => {
       const users = await base44.entities.User.list("-created_date");
       return users;
-    }
+    },
+    refetchInterval: 5000
   });
 
   const inviteMutation = useMutation({
