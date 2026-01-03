@@ -20,6 +20,8 @@ import { toast } from "sonner";
 export default function ResourceAssignmentDialog({ open, onClose, clientId, clientName }) {
   const [selectedResources, setSelectedResources] = useState([]);
   const [notes, setNotes] = useState("");
+  const [requiredResources, setRequiredResources] = useState([]);
+  const [onboardingStages, setOnboardingStages] = useState({});
   
   const queryClient = useQueryClient();
 
@@ -68,6 +70,21 @@ export default function ResourceAssignmentDialog({ open, onClose, clientId, clie
         ? prev.filter(id => id !== resourceId)
         : [...prev, resourceId]
     );
+  };
+
+  const toggleRequired = (resourceId) => {
+    setRequiredResources(prev =>
+      prev.includes(resourceId)
+        ? prev.filter(id => id !== resourceId)
+        : [...prev, resourceId]
+    );
+  };
+
+  const setOnboardingStage = (resourceId, stage) => {
+    setOnboardingStages(prev => ({
+      ...prev,
+      [resourceId]: stage
+    }));
   };
 
   const handleAssign = () => {
