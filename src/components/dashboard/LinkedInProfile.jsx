@@ -89,9 +89,9 @@ export default function LinkedInProfile() {
                   <Linkedin className="w-3 h-3 mr-1" />
                   Connected
                 </Badge>
-                {profile?.locale && (
+                {profile?.locale?.language && (
                   <Badge variant="outline" className="text-xs">
-                    {profile.locale}
+                    {profile.locale.language}_{profile.locale.country}
                   </Badge>
                 )}
               </div>
