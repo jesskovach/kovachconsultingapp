@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { format, isToday, isTomorrow, isPast, startOfWeek, endOfWeek, isWithinInterval, addWeeks } from "date-fns";
-import { Calendar, Clock, Plus, Filter, ChevronRight, MoreHorizontal, Edit2, Trash2 } from "lucide-react";
+import { Calendar, Clock, Plus, Filter, ChevronRight, MoreHorizontal, Edit2, Trash2, CreditCard } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import SessionForm from "@/components/sessions/SessionForm";
+import PaymentButton from "@/components/payments/PaymentButton";
 
 export default function Sessions() {
   const [showForm, setShowForm] = useState(false);
@@ -249,6 +250,19 @@ export default function Sessions() {
                           </div>
 
                           <div className="flex items-center gap-2">
+                            {session.status === 'scheduled' && (
+                              <PaymentButton
+                                clientId={session.client_id}
+                                amount={150}
+                                description={`Session on ${format(new Date(session.date), "MMM d, yyyy")}`}
+                                sessionId={session.id}
+                                size="sm"
+                                variant="outline"
+                              >
+                                <CreditCard className="w-4 h-4 mr-2" />
+                                Pay
+                              </PaymentButton>
+                            )}
                             <Link
                               to={createPageUrl("ClientDetail") + `?id=${session.client_id}`}
                               className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors opacity-0 group-hover:opacity-100"
