@@ -18,9 +18,9 @@ Deno.serve(async (req) => {
     const { clientId, amount, description, type = 'session', sessionId } = await req.json();
     console.log('Payment request:', { clientId, amount, description, type, sessionId });
 
-    // Get client details
+    // Get client details using service role
     console.log('Fetching client:', clientId);
-    const clients = await base44.entities.Client.filter({ id: clientId });
+    const clients = await base44.asServiceRole.entities.Client.filter({ id: clientId });
     const client = clients[0];
     console.log('Client found:', client?.name);
 
