@@ -7,7 +7,7 @@ import { createPageUrl } from "@/utils";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Mail, Phone, Building2, Briefcase, Calendar, 
-  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink, Send, MessageSquare
+  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink, Send, MessageSquare, CreditCard
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -41,6 +41,7 @@ import ResourceAssignmentDialog from "@/components/resources/ResourceAssignmentD
 import EmailComposer from "@/components/emails/EmailComposer";
 import EmailThread from "@/components/emails/EmailThread";
 import PortalMessaging from "@/components/portal/PortalMessaging";
+import PaymentButton from "@/components/payments/PaymentButton";
 
 export default function ClientDetail() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -409,7 +410,20 @@ export default function ClientDetail() {
                       </div>
                       <div className="flex items-center gap-2">
                         {session.status === 'scheduled' && (
-                          <CalendarSyncButton session={session} />
+                          <>
+                            <PaymentButton
+                              clientId={session.client_id}
+                              amount={150}
+                              description={`Session on ${format(new Date(session.date), "MMM d, yyyy")}`}
+                              sessionId={session.id}
+                              size="sm"
+                              variant="outline"
+                            >
+                              <CreditCard className="w-4 h-4 mr-2" />
+                              Pay
+                            </PaymentButton>
+                            <CalendarSyncButton session={session} />
+                          </>
                         )}
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
