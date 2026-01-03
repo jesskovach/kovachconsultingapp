@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { 
   Target, Calendar, MessageSquare, FileText, 
-  BookOpen, User, LogOut 
+  BookOpen, User, LogOut, CreditCard 
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,7 @@ import PortalDocuments from "@/components/portal/PortalDocuments";
 import PortalResources from "@/components/portal/PortalResources";
 import SessionFeedbackForm from "@/components/portal/SessionFeedbackForm";
 import GoalForm from "@/components/goals/GoalForm";
+import PaymentButton from "@/components/payments/PaymentButton";
 
 export default function ClientPortal() {
   const [feedbackSession, setFeedbackSession] = useState(null);
@@ -107,6 +108,12 @@ export default function ClientPortal() {
       const settings = await base44.entities.CalendlySettings.list();
       return settings[0];
     }
+  });
+
+  const { data: payments = [] } = useQuery({
+    queryKey: ["clientPayments", client?.id],
+    queryFn: () => base44.entities.Payment.filter({ client_id: client.id }, "-created_date"),
+    enabled: !!client
   });
 
   const feedbackMutation = useMutation({
@@ -232,6 +239,15 @@ export default function ClientPortal() {
             <TabsTrigger value="resources">
               <BookOpen className="w-4 h-4 mr-2" />
               Resources
+            </TabsTrigger>
+            <TabsTrigger value="payments">
+              <CreditCard className="w-4 h-4 mr-2" />
+              Payments
+              {payments.filter(p => p.status === 'pending').length > 0 && (
+                <span className="ml-1 px-1.5 py-0.5 bg-amber-600 text-white text-xs rounded-full">
+                  {payments.filter(p => p.status === 'pending').length}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -376,7 +392,80 @@ export default function ClientPortal() {
           <TabsContent value="resources">
             <PortalResources resources={resources} clientId={client?.id} />
           </TabsContent>
+
+          <TabsContent value="payments">
+            <div className="space-y-6">
+              <div>
+                <h3 className="text-xl font-semibold text-slate-800 mb-4">Your Payments</h3>
+                <p className="text-slate-600 mb-6">View and pay your coaching invoices</p>
+              </div>
+
+              {payments.length > 0 ? (
+                <div className="space-y-4">
+                  {payments.map((payment, index) => (
+                    <motion.div
+                      key={payment.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="bg-white rounded-xl border border-slate-100 p-6 hover:shadow-md transition-shadow"
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-2">
+                            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
+                              <CreditCard className="w-5 h-5 text-slate-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-slate-800">{payment.description}</h4>
+                              <p className="text-sm text-slate-500">
+                                {new Date(payment.created_date).toLocaleDateString('en-US', { 
+                                  month: 'long', 
+                                  day: 'numeric', 
+                                  year: 'numeric' 
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4 mt-3">
+                            <span className="text-2xl font-bold text-slate-800">
+                              ${payment.amount.toFixed(2)}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              payment.status === 'paid' 
+                                ? 'bg-emerald-100 text-emerald-700' 
+                                : payment.status === 'pending'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}>
+                              {payment.status}
+                            </span>
+                          </div>
+                        </div>
+                        {payment.status === 'pending' && (
+                          <div className="ml-4">
+                            <PaymentButton
+                              clientId={client.id}
+                              amount={payment.amount}
+                              description={payment.description}
+                              type={payment.type}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl border border-slate-100 p-12 text-center">
+                  <CreditCard className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                  <p className="text-slate-500">No payments yet</p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
         </Tabs>
+
       </div>
 
       {/* Feedback Form */}
