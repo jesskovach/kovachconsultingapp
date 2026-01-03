@@ -46,15 +46,30 @@ export default function Clients() {
   const createMutation = useMutation({
     mutationFn: async (data) => {
       const client = await base44.entities.Client.create(data);
-      // Invite user with role="user" (not admin) so they can access the client portal
-      await base44.users.inviteUser(client.email, "user");
-      // Send welcome email for new clients
-      await base44.functions.invoke("sendWelcomeEmail", { clientId: client.id });
+      
+      // Try to invite user, but don't fail if user already exists
+      try {
+        await base44.users.inviteUser(client.email, "user");
+      } catch (error) {
+        console.log('User invitation skipped:', error.message);
+      }
+      
+      // Try to send welcome email, but don't fail the entire operation
+      try {
+        await base44.functions.invoke("sendWelcomeEmail", { clientId: client.id });
+      } catch (error) {
+        console.log('Welcome email failed:', error.message);
+      }
+      
       return client;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowForm(false);
+    },
+    onError: (error) => {
+      console.error('Client creation failed:', error);
+      alert(`Failed to create client: ${error.message}`);
     }
   });
 
