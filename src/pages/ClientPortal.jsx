@@ -22,8 +22,6 @@ export default function ClientPortal() {
   const [editingGoal, setEditingGoal] = useState(null);
   const queryClient = useQueryClient();
 
-  const queryClient = useQueryClient();
-
   const { data: user } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me()
