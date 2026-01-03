@@ -77,7 +77,29 @@ Deno.serve(async (req) => {
 
     // Get app base URL from environment
     const appId = Deno.env.get("BASE44_APP_ID");
-    const intakeFormUrl = `https://${appId}.base44.app/#/ClientIntake?clientId=${clientId}`;
+    
+    // Generate secure token for unauthenticated access (optional - client can also login)
+    const tokenSecret = Deno.env.get("INTAKE_TOKEN_SECRET");
+    let intakeFormUrl = `https://${appId}.base44.app/#/ClientIntake?clientId=${clientId}`;
+    
+    if (tokenSecret) {
+      const encoder = new TextEncoder();
+      const key = await crypto.subtle.importKey(
+        "raw",
+        encoder.encode(tokenSecret),
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["sign"]
+      );
+      
+      const data = encoder.encode(`${clientId}:${client.email}`);
+      const signature = await crypto.subtle.sign("HMAC", key, data);
+      const token = Array.from(new Uint8Array(signature))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      
+      intakeFormUrl += `&token=${token}`;
+    }
 
     // Send welcome email
     const emailBody = `

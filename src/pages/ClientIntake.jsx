@@ -5,14 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
+import { CheckCircle2, Loader2, Sparkles, LogIn } from "lucide-react";
 import { motion } from "framer-motion";
 
 export default function ClientIntake() {
   const urlParams = new URLSearchParams(window.location.search);
   const clientId = urlParams.get("clientId");
+  const verificationToken = urlParams.get("token");
 
   const [submitted, setSubmitted] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
   const [formData, setFormData] = useState({
     current_challenges: "",
     coaching_goals: "",
@@ -24,11 +26,20 @@ export default function ClientIntake() {
     additional_info: ""
   });
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const authenticated = await base44.auth.isAuthenticated();
+      setIsAuthenticated(authenticated);
+    };
+    checkAuth();
+  }, []);
+
   const submitMutation = useMutation({
     mutationFn: async (responses) => {
       return base44.functions.invoke("submitIntakeForm", {
         clientId,
-        responses
+        responses,
+        verificationToken
       });
     },
     onSuccess: () => {
@@ -51,6 +62,44 @@ export default function ClientIntake() {
         <div className="text-center">
           <p className="text-slate-600">Invalid intake form link</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show loading while checking authentication
+  if (isAuthenticated === null) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center p-4">
+        <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  // If not authenticated and no token, prompt to login
+  if (!isAuthenticated && !verificationToken) {
+    const currentUrl = window.location.href;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-slate-50 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-white rounded-2xl shadow-xl border border-slate-100 p-8 text-center"
+        >
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <LogIn className="w-8 h-8 text-blue-600" />
+          </div>
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Login Required</h2>
+          <p className="text-slate-600 mb-6">
+            Please log in to your account to complete the intake form. If you haven't created an account yet, check your email for the invitation.
+          </p>
+          <Button
+            onClick={() => base44.auth.redirectToLogin(currentUrl)}
+            className="w-full bg-slate-800 hover:bg-slate-700"
+          >
+            <LogIn className="w-4 h-4 mr-2" />
+            Login to Continue
+          </Button>
+        </motion.div>
       </div>
     );
   }
