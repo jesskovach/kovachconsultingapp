@@ -15,8 +15,8 @@ Deno.serve(async (req) => {
     const accessToken = await base44.asServiceRole.connectors.getAccessToken("googlecalendar");
 
     if (action === 'create') {
-      // Get session details
-      const sessions = await base44.entities.Session.filter({ id: sessionId });
+      // Get session details using service role
+      const sessions = await base44.asServiceRole.entities.Session.filter({ id: sessionId });
       const session = sessions[0];
 
       if (!session) {
