@@ -10,6 +10,7 @@ export default function PaymentButton({ clientId, amount, description, type = "s
   const handlePayment = async () => {
     try {
       setLoading(true);
+      console.log('Starting payment with:', { clientId, amount, description, type, sessionId });
       
       const response = await base44.functions.invoke('createStripeCheckout', {
         clientId,
@@ -19,17 +20,20 @@ export default function PaymentButton({ clientId, amount, description, type = "s
         sessionId
       });
 
+      console.log('Payment response:', response);
+
       if (response.data?.url) {
         window.location.href = response.data.url;
       } else if (response.data?.error) {
         toast.error(response.data.error);
+        setLoading(false);
       } else {
         toast.error('Failed to create checkout session');
+        setLoading(false);
       }
     } catch (error) {
       console.error('Payment error:', error);
-      toast.error(error.message || 'Failed to initiate payment');
-    } finally {
+      toast.error(error.response?.data?.error || error.message || 'Failed to initiate payment');
       setLoading(false);
     }
   };

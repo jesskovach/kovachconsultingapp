@@ -10,10 +10,13 @@ export default function CalendarSyncButton({ session, variant = "outline", size 
 
   const syncGoogleMutation = useMutation({
     mutationFn: async () => {
+      console.log('Starting calendar sync for session:', session.id);
       const response = await base44.functions.invoke('syncGoogleCalendar', {
         sessionId: session.id,
         action: 'create'
       });
+      
+      console.log('Calendar sync response:', response);
       
       // Check if the response contains an error
       if (response.data?.error) {
@@ -32,7 +35,7 @@ export default function CalendarSyncButton({ session, variant = "outline", size 
     },
     onError: (error) => {
       console.error("Calendar sync error:", error);
-      toast.error(error.message || "Failed to sync with Google Calendar");
+      toast.error(error.response?.data?.error || error.message || "Failed to sync with Google Calendar");
     }
   });
 
