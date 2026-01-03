@@ -12,6 +12,7 @@ import UpcomingSession from "@/components/dashboard/UpcomingSession";
 import ClientCard from "@/components/dashboard/ClientCard";
 import FollowUpReminders from "@/components/dashboard/FollowUpReminders";
 import GoalOfTheMonth from "@/components/dashboard/GoalOfTheMonth";
+import LinkedInProfile from "@/components/dashboard/LinkedInProfile";
 import SessionForm from "@/components/sessions/SessionForm";
 import ClientForm from "@/components/clients/ClientForm";
 import { isAfter, isBefore, addDays, startOfDay, format } from "date-fns";
@@ -340,6 +341,9 @@ export default function Dashboard() {
 
           {/* Right Column - Clients & Team */}
           <div className="space-y-8">
+            {/* LinkedIn Profile */}
+            <LinkedInProfile />
+
             {/* Goal of the Month */}
             <GoalOfTheMonth />
 
