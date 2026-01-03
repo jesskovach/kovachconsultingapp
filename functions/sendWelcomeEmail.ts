@@ -75,12 +75,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Get app base URL from environment
-    const appId = Deno.env.get("BASE44_APP_ID");
+    // Get app URL from request origin
+    const origin = new URL(req.url).origin;
+    const appUrl = origin.replace('/api/functions/', '');
     
     // Generate secure token for unauthenticated access (optional - client can also login)
     const tokenSecret = Deno.env.get("INTAKE_TOKEN_SECRET");
-    let intakeFormUrl = `https://${appId}.base44.app/#/ClientIntake?clientId=${clientId}`;
+    let intakeFormUrl = `${appUrl}/#/ClientIntake?clientId=${clientId}`;
     
     if (tokenSecret) {
       const encoder = new TextEncoder();
