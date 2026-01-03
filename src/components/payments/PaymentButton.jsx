@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function PaymentButton({ clientId, amount, description, type = "session", size = "default" }) {
+export default function PaymentButton({ clientId, amount, description, type = "session", sessionId, size = "default" }) {
   const [loading, setLoading] = useState(false);
 
   const handlePayment = async () => {
@@ -14,7 +14,8 @@ export default function PaymentButton({ clientId, amount, description, type = "s
         clientId,
         amount,
         description,
-        type
+        type,
+        sessionId
       });
 
       console.log('Full Stripe response:', response);

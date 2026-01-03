@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { clientId, amount, description, type = 'session' } = await req.json();
+    const { clientId, amount, description, type = 'session', sessionId } = await req.json();
 
     // Get client details
     const clients = await base44.entities.Client.filter({ id: clientId });
@@ -22,15 +22,52 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Client not found' }, { status: 404 });
     }
 
-    // Create payment record
-    const payment = await base44.asServiceRole.entities.Payment.create({
+    // Check for existing pending payment to prevent duplicates
+    const existingPayments = await base44.asServiceRole.entities.Payment.filter({
+      client_id: clientId,
+      status: 'pending',
+      amount,
+      description
+    });
+
+    // If a pending payment exists with a valid Stripe session, return it
+    if (existingPayments.length > 0) {
+      const existingPayment = existingPayments[0];
+      if (existingPayment.stripe_checkout_session_id) {
+        // Retrieve existing Stripe session
+        try {
+          const existingSession = await stripe.checkout.sessions.retrieve(existingPayment.stripe_checkout_session_id);
+          if (existingSession.status !== 'expired') {
+            return Response.json({
+              sessionId: existingSession.id,
+              url: existingSession.url
+            });
+          }
+        } catch (e) {
+          // Session doesn't exist or expired, create new one
+        }
+      }
+    }
+
+    // Create payment record with session_id if provided
+    const paymentData = {
       client_id: clientId,
       client_name: client.name,
       amount,
       description,
       type,
       status: 'pending'
-    });
+    };
+
+    // Require session_id for session-type payments
+    if (type === 'session') {
+      if (!sessionId) {
+        return Response.json({ error: 'session_id is required for session payments' }, { status: 400 });
+      }
+      paymentData.session_id = sessionId;
+    }
+
+    const payment = await base44.asServiceRole.entities.Payment.create(paymentData);
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
