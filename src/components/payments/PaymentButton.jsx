@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { CreditCard, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-export default function PaymentButton({ clientId, amount, description, type = "session", sessionId, size = "default" }) {
+export default function PaymentButton({ clientId, amount, description, type = "session", sessionId, size = "default", variant = "default", children }) {
   const [loading, setLoading] = useState(false);
 
   const handlePayment = async () => {
@@ -27,13 +27,16 @@ export default function PaymentButton({ clientId, amount, description, type = "s
         window.location.href = response.data.url;
       } else if (response.data?.error) {
         console.error('Stripe error:', response.data.error);
+        alert(`Payment Error: ${response.data.error}`);
         toast.error(response.data.error);
       } else {
         console.error('Unexpected response format:', response);
+        alert(`Unexpected response: ${JSON.stringify(response.data)}`);
         toast.error('Failed to create checkout session - check console');
       }
     } catch (error) {
       console.error('Payment error:', error);
+      alert(`Payment Error: ${error.message || error}`);
       toast.error(error.message || 'Failed to initiate payment');
     } finally {
       setLoading(false);
@@ -45,14 +48,19 @@ export default function PaymentButton({ clientId, amount, description, type = "s
       onClick={handlePayment}
       disabled={loading}
       size={size}
-      className="bg-slate-800 hover:bg-slate-700"
+      variant={variant}
+      className={variant === "outline" ? "" : "bg-slate-800 hover:bg-slate-700"}
     >
-      {loading ? (
-        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-      ) : (
-        <CreditCard className="w-4 h-4 mr-2" />
+      {children || (
+        <>
+          {loading ? (
+            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          ) : (
+            <CreditCard className="w-4 h-4 mr-2" />
+          )}
+          Pay ${amount}
+        </>
       )}
-      Pay ${amount}
     </Button>
   );
 }
