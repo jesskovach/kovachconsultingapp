@@ -48,6 +48,13 @@ export default function Clients() {
       const client = await base44.entities.Client.create(data);
       // Invite user with role="user" (not admin) so they can access the client portal
       await base44.users.inviteUser(client.email, "user");
+
+      // Link the invited user to their client record
+      const users = await base44.entities.User.filter({ email: client.email });
+      if (users.length > 0) {
+        await base44.entities.User.update(users[0].id, { client_id: client.id });
+      }
+
       // Send welcome email for new clients
       await base44.functions.invoke("sendWelcomeEmail", { clientId: client.id });
       return client;
