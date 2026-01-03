@@ -45,31 +45,42 @@ export default function Clients() {
 
   const createMutation = useMutation({
     mutationFn: async (data) => {
-      const client = await base44.entities.Client.create(data);
+      console.log('Creating client with data:', data);
       
-      // Try to invite user, but don't fail if user already exists
       try {
-        await base44.users.inviteUser(client.email, "user");
+        const client = await base44.entities.Client.create(data);
+        console.log('Client created successfully:', client.id);
+        
+        // Try to invite user, but don't fail if user already exists
+        try {
+          await base44.users.inviteUser(client.email, "user");
+          console.log('User invited successfully');
+        } catch (error) {
+          console.log('User invitation skipped:', error.message);
+        }
+        
+        // Try to send welcome email, but don't fail the entire operation
+        try {
+          await base44.functions.invoke("sendWelcomeEmail", { clientId: client.id });
+          console.log('Welcome email sent successfully');
+        } catch (error) {
+          console.log('Welcome email failed:', error.message);
+        }
+        
+        return client;
       } catch (error) {
-        console.log('User invitation skipped:', error.message);
+        console.error('Client creation error:', error);
+        throw error;
       }
-      
-      // Try to send welcome email, but don't fail the entire operation
-      try {
-        await base44.functions.invoke("sendWelcomeEmail", { clientId: client.id });
-      } catch (error) {
-        console.log('Welcome email failed:', error.message);
-      }
-      
-      return client;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
       setShowForm(false);
+      console.log('Client creation completed');
     },
     onError: (error) => {
-      console.error('Client creation failed:', error);
-      alert(`Failed to create client: ${error.message}`);
+      console.error('Mutation error:', error);
+      alert(`Failed to create client: ${error.message || error}`);
     }
   });
 
