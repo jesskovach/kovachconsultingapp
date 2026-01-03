@@ -22,22 +22,29 @@ export default function ClientPortal() {
   const [editingGoal, setEditingGoal] = useState(null);
   const queryClient = useQueryClient();
 
-  const { data: user } = useQuery({
+  const { data: user, refetch: refetchUser } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me()
   });
 
-  const { data: client } = useQuery({
+  const { data: client, isLoading: clientLoading } = useQuery({
     queryKey: ["clientByEmail", user?.email],
     queryFn: async () => {
+      // Try to find client by user.client_id first
+      if (user.client_id) {
+        const clients = await base44.entities.Client.filter({ id: user.client_id });
+        if (clients.length > 0) return clients[0];
+      }
+      
+      // Fallback: find by email and auto-link
       const clients = await base44.entities.Client.filter({ email: user.email });
       if (clients.length > 0) {
-        // Auto-link user to client if not already linked
-        if (!user.client_id) {
-          await base44.auth.updateMe({ client_id: clients[0].id });
-        }
+        // Auto-link user to client
+        await base44.auth.updateMe({ client_id: clients[0].id });
+        await refetchUser(); // Refresh user data
         return clients[0];
       }
+      
       return null;
     },
     enabled: !!user
@@ -142,11 +149,12 @@ export default function ClientPortal() {
     }
   };
 
-  if (!user) {
+  if (!user || clientLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Loading...</h2>
+          <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-800 mb-2">Loading your portal...</h2>
         </div>
       </div>
     );
