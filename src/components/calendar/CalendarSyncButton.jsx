@@ -17,6 +17,8 @@ export default function CalendarSyncButton({ session, variant = "outline", size 
       });
       
       console.log('Calendar sync response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
       
       // Check if the response contains an error
       if (response.data?.error) {
@@ -34,8 +36,11 @@ export default function CalendarSyncButton({ session, variant = "outline", size 
       });
     },
     onError: (error) => {
-      console.error("Calendar sync error:", error);
-      toast.error(error.response?.data?.error || error.message || "Failed to sync with Google Calendar");
+      console.error("Calendar sync error full:", error);
+      console.error("Error response:", error.response);
+      console.error("Error data:", error.response?.data);
+      const errorMsg = error.response?.data?.error || error.message || "Failed to sync with Google Calendar";
+      toast.error(`Calendar sync failed: ${errorMsg}`);
     }
   });
 

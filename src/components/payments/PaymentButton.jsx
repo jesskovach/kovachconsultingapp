@@ -21,6 +21,8 @@ export default function PaymentButton({ clientId, amount, description, type = "s
       });
 
       console.log('Payment response:', response);
+      console.log('Response status:', response.status);
+      console.log('Response data:', response.data);
 
       if (response.data?.url) {
         window.location.href = response.data.url;
@@ -28,12 +30,15 @@ export default function PaymentButton({ clientId, amount, description, type = "s
         toast.error(response.data.error);
         setLoading(false);
       } else {
-        toast.error('Failed to create checkout session');
+        toast.error('Failed to create checkout session - no URL returned');
         setLoading(false);
       }
     } catch (error) {
-      console.error('Payment error:', error);
-      toast.error(error.response?.data?.error || error.message || 'Failed to initiate payment');
+      console.error('Payment error full:', error);
+      console.error('Error response:', error.response);
+      console.error('Error data:', error.response?.data);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to initiate payment';
+      toast.error(`Payment failed: ${errorMsg}`);
       setLoading(false);
     }
   };
