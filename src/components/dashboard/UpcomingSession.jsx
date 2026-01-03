@@ -1,6 +1,8 @@
 import { format, isToday, isTomorrow } from "date-fns";
 import { Clock, Video, User } from "lucide-react";
 import { motion } from "framer-motion";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 export default function UpcomingSession({ session, index }) {
   const sessionDate = new Date(session.date);
@@ -19,12 +21,13 @@ export default function UpcomingSession({ session, index }) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay: index * 0.1 }}
-      className="flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-md transition-all cursor-pointer group"
-    >
+    <Link to={createPageUrl('ClientDetail') + `?id=${session.client_id}`}>
+      <motion.div
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: index * 0.1 }}
+        className="flex items-center gap-4 p-4 rounded-xl bg-white border border-slate-100 hover:border-slate-200 hover:shadow-md transition-all cursor-pointer group"
+      >
       <div className="flex-shrink-0 w-14 h-14 rounded-xl bg-gradient-to-br from-slate-800 to-slate-700 flex flex-col items-center justify-center text-white">
         <span className="text-xs font-medium opacity-80">{format(sessionDate, "MMM")}</span>
         <span className="text-lg font-bold leading-none">{format(sessionDate, "d")}</span>
@@ -51,6 +54,7 @@ export default function UpcomingSession({ session, index }) {
           <Video className="w-4 h-4" />
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </Link>
   );
 }
