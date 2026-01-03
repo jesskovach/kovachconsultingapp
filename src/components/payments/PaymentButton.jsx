@@ -17,14 +17,19 @@ export default function PaymentButton({ clientId, amount, description, type = "s
         type
       });
 
-      console.log('Stripe response:', response);
+      console.log('Full Stripe response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response URL:', response.data?.url);
 
       if (response.data?.url) {
+        console.log('Redirecting to:', response.data.url);
         window.location.href = response.data.url;
       } else if (response.data?.error) {
+        console.error('Stripe error:', response.data.error);
         toast.error(response.data.error);
       } else {
-        toast.error('Failed to create checkout session');
+        console.error('Unexpected response format:', response);
+        toast.error('Failed to create checkout session - check console');
       }
     } catch (error) {
       console.error('Payment error:', error);
