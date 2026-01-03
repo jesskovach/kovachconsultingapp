@@ -126,6 +126,13 @@ export default function ClientDetail() {
     }
   });
 
+  const resendEmailMutation = useMutation({
+    mutationFn: () => base44.functions.invoke("sendWelcomeEmail", { clientId }),
+    onSuccess: () => {
+      alert("Welcome email sent successfully!");
+    }
+  });
+
   const createSessionMutation = useMutation({
     mutationFn: (data) => base44.entities.Session.create(data),
     onSuccess: () => {
@@ -258,14 +265,25 @@ export default function ClientDetail() {
                     </p>
                   )}
                 </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setShowClientForm(true)}
-                >
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
+                <div className="flex gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => resendEmailMutation.mutate()}
+                    disabled={resendEmailMutation.isPending}
+                  >
+                    <Mail className="w-4 h-4 mr-2" />
+                    {resendEmailMutation.isPending ? "Sending..." : "Resend Intake"}
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setShowClientForm(true)}
+                  >
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
