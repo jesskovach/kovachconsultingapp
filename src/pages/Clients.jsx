@@ -75,6 +75,7 @@ export default function Clients() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       setShowForm(false);
       console.log('Client creation completed');
     },
