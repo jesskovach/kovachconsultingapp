@@ -142,9 +142,23 @@ export default function ClientDetail() {
   });
 
   const updateSessionMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Session.update(id, data),
+    mutationFn: async ({ id, data, previousStatus }) => {
+      await base44.entities.Session.update(id, data);
+      
+      // If status changed to 'completed', update client's total_sessions
+      if (data.status === 'completed' && previousStatus !== 'completed') {
+        await base44.functions.invoke('updateClientStats', { 
+          clientId, 
+          sessionStatus: 'completed',
+          previousStatus 
+        });
+      }
+      
+      return data;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions", clientId] });
+      queryClient.invalidateQueries({ queryKey: ["client", clientId] });
       setShowSessionForm(false);
       setEditingSession(null);
     }
@@ -740,7 +754,11 @@ export default function ClientDetail() {
         }}
         onSubmit={(data) => {
           if (editingSession) {
-            updateSessionMutation.mutate({ id: editingSession.id, data });
+            updateSessionMutation.mutate({ 
+              id: editingSession.id, 
+              data,
+              previousStatus: editingSession.status 
+            });
           } else {
             createSessionMutation.mutate({ ...data, client_id: clientId, client_name: client.name });
           }
