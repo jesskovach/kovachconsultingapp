@@ -245,7 +245,7 @@ export default function Resources() {
                       className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
                     >
                       <ExternalLink className="w-3 h-3 mr-1" />
-                      View Resource
+                      {resource.url.includes('supabase.co') || resource.url.includes('.pdf') || resource.url.includes('.doc') ? 'Open File' : 'View Resource'}
                     </a>
                   )}
                 </motion.div>
