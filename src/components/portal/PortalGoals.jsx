@@ -80,13 +80,7 @@ export default function PortalGoals({ goals, onAddGoal, onEditGoal }) {
       ) : (
         <div className="text-center py-12 bg-white rounded-xl border border-slate-100">
           <Target className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-          <p className="text-slate-500 mb-4">No goals set yet</p>
-          {onAddGoal && (
-            <Button onClick={onAddGoal} variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
-              Add Your First Goal
-            </Button>
-          )}
+          <p className="text-slate-500">No goals set yet</p>
         </div>
       )}
     </div>
