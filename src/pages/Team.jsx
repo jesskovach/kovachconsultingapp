@@ -42,6 +42,8 @@ export default function Team() {
       if (role === 'user') {
         // Check if client already exists
         const existingClients = await base44.entities.Client.filter({ email });
+        let clientId;
+        
         if (existingClients.length === 0) {
           // Extract name from email for initial setup
           const name = email.split('@')[0].split('.').map(w => 
@@ -49,12 +51,21 @@ export default function Team() {
           ).join(' ');
           
           // Create pending client record
-          await base44.entities.Client.create({
+          const client = await base44.entities.Client.create({
             name,
             email,
             status: 'prospect',
             pipeline_stage: 'lead'
           });
+          clientId = client.id;
+        } else {
+          clientId = existingClients[0].id;
+        }
+        
+        // Link the user to the client by updating their client_id
+        const users = await base44.entities.User.filter({ email });
+        if (users.length > 0) {
+          await base44.entities.User.update(users[0].id, { client_id: clientId });
         }
       }
     },
