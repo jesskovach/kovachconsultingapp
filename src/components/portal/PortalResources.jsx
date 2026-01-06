@@ -6,12 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import DocumentViewer from "@/components/resources/DocumentViewer";
 
 export default function PortalResources({ resources, clientId }) {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState("all");
   const [tagFilter, setTagFilter] = useState("");
+  const [viewingResource, setViewingResource] = useState(null);
   const queryClient = useQueryClient();
 
   const { data: assignments = [] } = useQuery({
@@ -167,6 +169,7 @@ export default function PortalResources({ resources, clientId }) {
                   categoryColors={categoryColors}
                   getTypeIcon={getTypeIcon}
                   handleResourceClick={handleResourceClick}
+                  setViewingResource={setViewingResource}
                   isRequired
                 />
               );
@@ -193,6 +196,7 @@ export default function PortalResources({ resources, clientId }) {
                   categoryColors={categoryColors}
                   getTypeIcon={getTypeIcon}
                   handleResourceClick={handleResourceClick}
+                  setViewingResource={setViewingResource}
                 />
               );
             })}
@@ -211,17 +215,34 @@ export default function PortalResources({ resources, clientId }) {
           <p className="text-slate-500">No resources available yet</p>
         </div>
       )}
+
+      <DocumentViewer
+        open={!!viewingResource}
+        onClose={() => setViewingResource(null)}
+        resource={viewingResource}
+      />
     </div>
   );
 }
 
-function ResourceCard({ resource, assignment, index, categoryColors, getTypeIcon, handleResourceClick, isRequired }) {
+function ResourceCard({ resource, assignment, index, categoryColors, getTypeIcon, handleResourceClick, setViewingResource, isRequired }) {
+  const isFile = resource.url?.includes('supabase.co') || 
+                resource.url?.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
+
+  const handleClick = (e) => {
+    handleResourceClick(resource.id);
+    if (isFile) {
+      e.preventDefault();
+      setViewingResource(resource);
+    }
+  };
+
   return (
     <motion.a
       href={resource.url}
       target="_blank"
       rel="noopener noreferrer"
-      onClick={() => handleResourceClick(resource.id)}
+      onClick={handleClick}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay: index * 0.05 }}
