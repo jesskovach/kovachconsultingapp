@@ -47,7 +47,7 @@ export default function DocumentViewer({ open, onClose, resource }) {
         <div className="flex-1 overflow-hidden bg-slate-50">
           {isPDF ? (
             <iframe
-              src={`https://docs.google.com/viewer?url=${encodeURIComponent(resource.url)}&embedded=true`}
+              src={`https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(resource.url)}`}
               className="w-full h-full border-0"
               title={resource.title}
             />
