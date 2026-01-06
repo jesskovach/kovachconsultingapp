@@ -202,13 +202,139 @@ export default function PortalResources({ resources, clientId }) {
                   </p>
                 </div>
               </div>
-            </AccordionContent>
-          </AccordionItem>
-          )}
-        </Accordion>
-      </div>
+              </AccordionContent>
+              </AccordionItem>
+              )}
+              {client?.contract_signed && (
+              <AccordionItem value="crisis-support" className="border-none">
+              <AccordionTrigger className="px-6 py-4 hover:bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
+                  <AlertCircle className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-800">Crisis & Mental Health Support</h3>
+              </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-6 pb-6">
+              <div className="space-y-6 text-slate-700">
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">Crisis & Mental Health Support</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>📞 <strong>988 Suicide & Crisis Lifeline</strong> – Call or text 988 (24/7)</p>
+                    <p>📞 <strong>Crisis Text Line</strong> – Text HELLO to 741741 (24/7)</p>
+                    <p>📞 <strong>National Alliance on Mental Illness (NAMI) Helpline</strong> – 1-800-950-6264 (Mon-Fri, 10 AM - 10 PM ET) or text "HelpLine" to 62640</p>
+                  </div>
+                </div>
 
-      <h3 className="font-semibold text-slate-800 mb-6">Curated Resources</h3>
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">Domestic Violence & Sexual Assault</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>📞 <strong>National Domestic Violence Hotline</strong> – 1-800-799-SAFE (7233) or text "START" to 88788 (24/7)</p>
+                    <p>📞 <strong>RAINN (Rape, Abuse & Incest National Network)</strong> – 1-800-656-HOPE (4673) (24/7)</p>
+                    <p>📞 <strong>StrongHearts Native Helpline</strong> (for Native Americans facing domestic violence) – 1-844-7NATIVE (762-8483)</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">LGBTQ+ Support</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>🏳️‍🌈 <strong>The Trevor Project</strong> (LGBTQ+ youth crisis support) – Call 1-866-488-7386, text "START" to 678-678, or chat online (24/7)</p>
+                    <p>🏳️‍🌈 <strong>Trans Lifeline</strong> (Run by and for trans people) – 1-877-565-8860 (24/7)</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">Reproductive Health & Rights</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>📞 <strong>Planned Parenthood Helpline</strong> – 1-800-230-PLAN (7526)</p>
+                    <p>📞 <strong>National Abortion Hotline</strong> – 1-800-772-9100</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">Legal & Civil Rights</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>⚖️ <strong>ACLU Legal Support</strong> – 1-212-549-2500 (for civil liberties violations)</p>
+                    <p>⚖️ <strong>National Lawyers Guild</strong> (for protest-related legal aid) – 1-212-679-5100</p>
+                    <p>⚖️ <strong>Lambda Legal</strong> (LGBTQ+ legal support) – 1-212-809-8585</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">Immigration & Refugee Assistance</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>🌍 <strong>National Immigration Law Center</strong> – 1-213-639-3900</p>
+                    <p>🌍 <strong>United We Dream</strong> (DACA & Immigrant Rights) – 1-844-363-1423</p>
+                    <p>🌍 <strong>Refugee Advocacy Hotline</strong> – 1-800-456-3849</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">Substance Abuse & Addiction</h4>
+                  <div className="space-y-2 text-sm">
+                    <p>📞 <strong>SAMHSA National Helpline</strong> – 1-800-662-HELP (4357) (24/7, confidential support)</p>
+                    <p>📞 <strong>Alcoholics Anonymous (AA) Helpline</strong> – Find local meetings: 1-212-870-3400</p>
+                    <p>📞 <strong>Narcotics Anonymous (NA) Helpline</strong> – Find local meetings: 1-818-773-9999</p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">International Hotlines</h4>
+
+                  <div className="mb-4">
+                    <p className="font-medium text-slate-700 mb-2">🌍 Mental Health & Suicide Prevention</p>
+                    <div className="space-y-1 text-sm ml-4">
+                      <p>🇬🇧 <strong>UK Samaritans</strong> – 116 123 (24/7)</p>
+                      <p>🇨🇦 <strong>Canada Talk Suicide</strong> – 1-833-456-4566 or text 45645</p>
+                      <p>🇦🇺 <strong>Lifeline Australia</strong> – 13 11 14 (24/7)</p>
+                      <p>🇮🇳 <strong>Vandrevala Foundation (India)</strong> – 1860 266 2345 or 9999 666 555</p>
+                      <p>🇪🇺 <strong>European Suicide Prevention Hotline</strong> – Call 112 for crisis support</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="font-medium text-slate-700 mb-2">🌍 Domestic Violence & Sexual Assault</p>
+                    <div className="space-y-1 text-sm ml-4">
+                      <p>🇬🇧 <strong>National Domestic Abuse Helpline (UK)</strong> – 0808 2000 247 (24/7)</p>
+                      <p>🇦🇺 <strong>1800RESPECT (Australia)</strong> – 1800 737 732 (24/7)</p>
+                      <p>🇮🇳 <strong>National Commission for Women (India)</strong> – +91-11-26942369</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="font-medium text-slate-700 mb-2">🌍 Human Trafficking Hotlines</p>
+                    <div className="space-y-1 text-sm ml-4">
+                      <p>🇨🇦 <strong>Canadian Human Trafficking Hotline</strong> – 1-833-900-1010 (24/7)</p>
+                      <p>🇬🇧 <strong>Modern Slavery & Exploitation Helpline (UK)</strong> – 08000 121 700 (24/7)</p>
+                      <p>🇦🇺 <strong>Australian Human Trafficking Hotline</strong> – 131 237</p>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <p className="font-medium text-slate-700 mb-2">🌍 LGBTQ+ Support</p>
+                    <div className="space-y-1 text-sm ml-4">
+                      <p>🇬🇧 <strong>Switchboard (UK LGBTQ+ Helpline)</strong> – 0800 0119 100 (10 AM - 10 PM)</p>
+                      <p>🇦🇺 <strong>QLife (Australia LGBTQ+ Support)</strong> – 1800 184 527</p>
+                      <p>🇨🇦 <strong>LGBT Youth Line (Canada)</strong> – 1-800-268-9688 or text 647-694-4275</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <p className="font-medium text-slate-700 mb-2">🌍 Substance Abuse & Addiction</p>
+                    <div className="space-y-1 text-sm ml-4">
+                      <p>🇬🇧 <strong>Frank (UK Drug Helpline)</strong> – 0300 123 6600</p>
+                      <p>🇦🇺 <strong>Alcohol & Drug Information Service (Australia)</strong> – 1800 250 015</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              </AccordionContent>
+              </AccordionItem>
+              )}
+              </Accordion>
+              </div>
+
+              <h3 className="font-semibold text-slate-800 mb-6">Curated Resources</h3>
 
       {/* Search and Filters */}
       <div className="bg-white rounded-xl border border-slate-100 p-4 mb-6">
