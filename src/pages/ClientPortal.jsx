@@ -31,23 +31,8 @@ export default function ClientPortal() {
   const { data: client, isLoading: clientLoading } = useQuery({
     queryKey: ["clientByEmail", user?.email],
     queryFn: async () => {
-      // Try to find client by user.client_id first
-      if (user.client_id) {
-        const clients = await base44.entities.Client.filter({ id: user.client_id });
-        if (clients.length > 0) return clients[0];
-      }
-      
-      // Fallback: find by email and auto-link
-      const clients = await base44.entities.Client.filter({ email: user.email });
-      if (clients.length > 0) {
-        // Auto-link user to client
-        await base44.auth.updateMe({ client_id: clients[0].id });
-        // Refresh user data
-        queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-        return clients[0];
-      }
-      
-      return null;
+      const response = await base44.functions.invoke('autoLinkUserToClient');
+      return response.data.client;
     },
     enabled: !!user,
     retry: 1
