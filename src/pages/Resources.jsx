@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ResourceForm from "@/components/resources/ResourceForm";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -39,6 +40,10 @@ export default function Resources() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["resources"] });
       setShowForm(false);
+      toast.success("Resource added successfully!");
+    },
+    onError: (error) => {
+      toast.error(`Failed to add resource: ${error.message}`);
     }
   });
 
@@ -48,6 +53,10 @@ export default function Resources() {
       queryClient.invalidateQueries({ queryKey: ["resources"] });
       setShowForm(false);
       setEditingResource(null);
+      toast.success("Resource updated successfully!");
+    },
+    onError: (error) => {
+      toast.error(`Failed to update resource: ${error.message}`);
     }
   });
 

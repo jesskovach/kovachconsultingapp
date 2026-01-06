@@ -75,6 +75,17 @@ export default function ResourceForm({ open, onClose, onSubmit, initialData, isL
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    if (!formData.title.trim()) {
+      toast.error("Please enter a title");
+      return;
+    }
+    
+    if (!formData.url.trim()) {
+      toast.error("Please enter a URL or upload a file");
+      return;
+    }
+    
     onSubmit(formData);
   };
 
