@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { BookOpen, Video, Book, Wrench, FileText, ExternalLink, Star, Search, Filter, AlertCircle } from "lucide-react";
+import { BookOpen, Video, Book, Wrench, FileText, ExternalLink, Star, Search, Filter, AlertCircle, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import DocumentViewer from "@/components/resources/DocumentViewer";
@@ -85,6 +86,87 @@ export default function PortalResources({ resources, clientId }) {
 
   return (
     <div>
+      {/* How I Work Section */}
+      <div className="mb-8 bg-white rounded-xl border border-slate-100 overflow-hidden">
+        <Accordion type="single" collapsible className="w-full">
+          <AccordionItem value="how-i-work" className="border-none">
+            <AccordionTrigger className="px-6 py-4 hover:bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
+                  <BookOpen className="w-5 h-5 text-violet-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-800">How I Work</h3>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-6 text-slate-700">
+                <p className="leading-relaxed">
+                  My work centers people who are navigating complexity from the margins—including those who are queer, neurodivergent, disabled, chronically burned out, or operating within systems that do not account for their full humanity.
+                </p>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">In our work together, I commit to:</h4>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Treating your lived experience as valid data, not something to be minimized or corrected</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Working at the level of systems, power, and patterns rather than personal blame</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Naming misalignment and harm honestly, even when it is uncomfortable</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Respecting capacity, access needs, and constraints as real and non-negotiable</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Creating space for clarity without urgency or forced optimism</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Being transparent about what I can and cannot offer</span></li>
+                  </ul>
+                </div>
+
+                <p className="font-medium text-slate-800">
+                  This work is not about fixing people. It is about helping people understand the environments they are in—and reclaim agency where it is possible.
+                </p>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-3">Who This Work Is For</h4>
+                  <p className="mb-3">This work is especially supportive for people who:</p>
+                  <ul className="space-y-2 text-sm">
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Feel chronically out of step with institutional expectations</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Are carrying disproportionate responsibility or emotional labor</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Have been labeled "too much," "too sensitive," or "not a fit"</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Are navigating leadership, professional, or civic roles without adequate structural support</span></li>
+                    <li className="flex gap-2"><span className="text-violet-600 font-bold">•</span><span>Want clarity without being flattened or coached into compliance</span></li>
+                  </ul>
+                  <p className="mt-3 italic">You do not need to justify why something feels hard here.</p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-2">Terms of Engagement</h4>
+                  <p className="text-sm">
+                    Kovach Consulting Group provides coaching, advisory, and sense-making services. This work is not legal, medical, mental health, or financial advice, and it does not replace services provided by licensed professionals. Clients remain responsible for their own decisions, actions, and outcomes. Sessions are collaborative and exploratory—the goal is not to resolve everything at once, but to create conditions for understanding, interpretation, and thoughtful action.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-2">Confidentiality & Boundaries</h4>
+                  <p className="text-sm">
+                    Information shared during sessions is treated as confidential to the extent reasonably possible. This work is professional and bounded. While it may touch on personal experience and systemic harm, it is not therapy and does not include crisis or emergency support.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-2">What to Expect</h4>
+                  <p className="text-sm mb-2 font-medium">This work prioritizes clarity over speed.</p>
+                  <p className="text-sm">
+                    Sessions may involve reflection, reframing, pattern recognition, and naming constraints rather than advice or instruction. You are not expected to arrive with polished answers or a plan. Curiosity, honesty, and a willingness to slow down are enough.
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold text-slate-800 mb-2">Medical & Mental Health Boundaries</h4>
+                  <p className="text-sm">
+                    Kovach Consulting Group does not provide medical, mental health, or clinical services. I do not diagnose conditions, assess medical risk, or offer treatment recommendations. If a situation arises that appears medically or psychologically concerning, I will name that boundary clearly and encourage the client to seek support from an appropriately licensed professional. Responsibility for seeking and receiving such care rests solely with the client.
+                  </p>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      </div>
+
       <h3 className="font-semibold text-slate-800 mb-6">Curated Resources</h3>
 
       {/* Search and Filters */}
