@@ -164,6 +164,39 @@ export default function PortalResources({ resources, clientId }) {
               </div>
             </AccordionContent>
           </AccordionItem>
+          <AccordionItem value="my-commitment" className="border-none">
+            <AccordionTrigger className="px-6 py-4 hover:bg-slate-50">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Star className="w-5 h-5 text-blue-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-slate-800">My Commitment</h3>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-6 pb-6">
+              <div className="space-y-4 text-slate-700">
+                <p className="leading-relaxed font-medium text-slate-800">I believe that clarity is a form of care.</p>
+                
+                <p className="leading-relaxed">
+                  I believe that many people are not struggling because they lack skill, intelligence, or resilience, but because they are navigating systems that were not designed with them in mind—or were designed to exclude them entirely.
+                </p>
+
+                <p className="leading-relaxed">
+                  I believe that interpretation matters: naming what is actually happening inside a system is often the first step toward restoring agency, safety, and dignity.
+                </p>
+
+                <p className="leading-relaxed">
+                  This work exists because I have lived inside those systems myself—as a queer, neurodivergent woman—and because I know firsthand how often structural harm is misnamed as personal failure.
+                </p>
+
+                <p className="leading-relaxed font-medium text-slate-800">I am not here to whisper.</p>
+
+                <p className="leading-relaxed">
+                  I am here to pay attention, to name patterns, and to help make space for people whose insight is often discounted or overlooked.
+                </p>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
         </Accordion>
       </div>
 
