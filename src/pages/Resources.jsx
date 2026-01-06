@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ResourceForm from "@/components/resources/ResourceForm";
+import DocumentViewer from "@/components/resources/DocumentViewer";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -27,6 +28,7 @@ export default function Resources() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [deleteDialog, setDeleteDialog] = useState({ open: false, id: null });
+  const [viewingResource, setViewingResource] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -247,15 +249,21 @@ export default function Resources() {
                   )}
                   
                   {resource.url && (
-                    <a
-                      href={resource.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => {
+                        const isFile = resource.url.includes('supabase.co') || 
+                                      resource.url.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
+                        if (isFile) {
+                          setViewingResource(resource);
+                        } else {
+                          window.open(resource.url, '_blank');
+                        }
+                      }}
                       className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700"
                     >
                       <ExternalLink className="w-3 h-3 mr-1" />
-                      {resource.url.includes('supabase.co') || resource.url.includes('.pdf') || resource.url.includes('.doc') ? 'Open File' : 'View Resource'}
-                    </a>
+                      {resource.url.includes('supabase.co') || resource.url.includes('.pdf') || resource.url.includes('.doc') ? 'View File' : 'View Resource'}
+                    </button>
                   )}
                 </motion.div>
               ))}
@@ -313,6 +321,12 @@ export default function Resources() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <DocumentViewer
+        open={!!viewingResource}
+        onClose={() => setViewingResource(null)}
+        resource={viewingResource}
+      />
     </div>
   );
 }
