@@ -47,9 +47,10 @@ export default function DocumentViewer({ open, onClose, resource }) {
         <div className="flex-1 overflow-hidden bg-slate-50">
           {isPDF ? (
             <iframe
-              src={resource.url}
+              src={`${resource.url}#view=FitH`}
               className="w-full h-full border-0"
               title={resource.title}
+              type="application/pdf"
             />
           ) : isDoc ? (
             <div className="flex flex-col items-center justify-center h-full">
