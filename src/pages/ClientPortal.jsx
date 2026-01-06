@@ -6,8 +6,9 @@ import {
   Target, Calendar, MessageSquare, FileText, 
   BookOpen, User, LogOut, CreditCard, Sparkles 
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PortalGoals from "@/components/portal/PortalGoals";
@@ -23,6 +24,7 @@ export default function ClientPortal() {
   const [feedbackSession, setFeedbackSession] = useState(null);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState(null);
+  const [activeTab, setActiveTab] = useState("overview");
   const queryClient = useQueryClient();
 
   const { data: user } = useQuery({
@@ -196,47 +198,66 @@ export default function ClientPortal() {
 
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="bg-white border border-slate-100 p-1">
-            <TabsTrigger value="overview">
-              <User className="w-4 h-4 mr-2" />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger value="goals">
-              <Target className="w-4 h-4 mr-2" />
-              Goals
-            </TabsTrigger>
-            <TabsTrigger value="sessions">
-              <Calendar className="w-4 h-4 mr-2" />
-              Sessions
-            </TabsTrigger>
-            <TabsTrigger value="messages">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Messages
-              {unreadMessages > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-red-600 text-white text-xs rounded-full">
-                  {unreadMessages}
-                </span>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="documents">
-              <FileText className="w-4 h-4 mr-2" />
-              Documents
-            </TabsTrigger>
-            <TabsTrigger value="resources">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Resources
-            </TabsTrigger>
-            <TabsTrigger value="payments">
-              <CreditCard className="w-4 h-4 mr-2" />
-              Payments
-              {payments.filter(p => p.status === 'pending').length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-amber-600 text-white text-xs rounded-full">
-                  {payments.filter(p => p.status === 'pending').length}
-                </span>
-              )}
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger className="w-full bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="overview">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Overview
+                </div>
+              </SelectItem>
+              <SelectItem value="goals">
+                <div className="flex items-center gap-2">
+                  <Target className="w-4 h-4" />
+                  Goals
+                </div>
+              </SelectItem>
+              <SelectItem value="sessions">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Sessions
+                </div>
+              </SelectItem>
+              <SelectItem value="messages">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4" />
+                  Messages
+                  {unreadMessages > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-red-600 text-white text-xs rounded-full">
+                      {unreadMessages}
+                    </span>
+                  )}
+                </div>
+              </SelectItem>
+              <SelectItem value="documents">
+                <div className="flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  Documents
+                </div>
+              </SelectItem>
+              <SelectItem value="resources">
+                <div className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  Resources
+                </div>
+              </SelectItem>
+              <SelectItem value="payments">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Payments
+                  {payments.filter(p => p.status === 'pending').length > 0 && (
+                    <span className="ml-1 px-1.5 py-0.5 bg-amber-600 text-white text-xs rounded-full">
+                      {payments.filter(p => p.status === 'pending').length}
+                    </span>
+                  )}
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
 
           {/* Overview Tab */}
           <TabsContent value="overview">
