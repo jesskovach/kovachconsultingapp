@@ -54,12 +54,29 @@ export default function CustomIntake() {
     }
 
     setIsSubmitting(true);
-    // Simulate submission
-    setTimeout(() => {
-      setIsSubmitting(false);
+    
+    try {
+      const { base44 } = await import("@/api/base44Client");
+      const user = await base44.auth.me();
+      const clients = await base44.entities.Client.filter({ email: user.email });
+      
+      if (clients.length === 0) {
+        toast.error("Client profile not found");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      await base44.functions.invoke('submitCustomIntake', {
+        formData,
+        clientId: clients[0].id
+      });
+      
       setSubmitted(true);
       toast.success("Intake form submitted successfully!");
-    }, 1500);
+    } catch (error) {
+      toast.error(error.response?.data?.error || "Failed to submit intake form");
+      setIsSubmitting(false);
+    }
   };
 
   if (submitted) {

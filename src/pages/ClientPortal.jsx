@@ -4,10 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { 
   Target, Calendar, MessageSquare, FileText, 
-  BookOpen, User, LogOut, CreditCard 
+  BookOpen, User, LogOut, CreditCard, Sparkles 
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import PortalGoals from "@/components/portal/PortalGoals";
 import PortalSessions from "@/components/portal/PortalSessions";
 import PortalMessaging from "@/components/portal/PortalMessaging";
@@ -238,30 +240,57 @@ export default function ClientPortal() {
 
           {/* Overview Tab */}
           <TabsContent value="overview">
-            {calendlySettings?.enabled && calendlySettings?.calendly_url && (
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {calendlySettings?.enabled && calendlySettings?.calendly_url && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-xl font-bold mb-2">Schedule Session</h3>
+                      <p className="text-blue-100">Book your next session</p>
+                    </div>
+                    <Button
+                      asChild
+                      size="lg"
+                      className="bg-white text-blue-600 hover:bg-blue-50"
+                    >
+                      <a href={calendlySettings.calendly_url} target="_blank" rel="noopener noreferrer">
+                        <Calendar className="w-4 h-4 mr-2" />
+                        Book
+                      </a>
+                    </Button>
+                  </div>
+                </motion.div>
+              )}
+              
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 mb-6 text-white"
+                transition={{ delay: 0.1 }}
+                className="bg-gradient-to-r from-violet-500 to-violet-600 rounded-xl p-6 text-white"
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-xl font-bold mb-2">Ready to schedule your next session?</h3>
-                    <p className="text-blue-100">Book a time that works for you</p>
+                    <h3 className="text-xl font-bold mb-2">Intake Form</h3>
+                    <p className="text-violet-100">Complete your questionnaire</p>
                   </div>
                   <Button
                     asChild
                     size="lg"
-                    className="bg-white text-blue-600 hover:bg-blue-50"
+                    className="bg-white text-violet-600 hover:bg-violet-50"
                   >
-                    <a href={calendlySettings.calendly_url} target="_blank" rel="noopener noreferrer">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      Schedule Session
-                    </a>
+                    <Link to={createPageUrl("CustomIntake")}>
+                      <Sparkles className="w-4 h-4 mr-2" />
+                      Start
+                    </Link>
                   </Button>
                 </div>
               </motion.div>
-            )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
