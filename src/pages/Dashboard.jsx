@@ -2,7 +2,7 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Users, Calendar, Target, TrendingUp, Plus, ArrowRight, Bell, CheckCircle2, Clock, MessageSquare } from "lucide-react";
+import { Users, Calendar, Target, TrendingUp, Plus, ArrowRight, Bell, CheckCircle2, Clock, MessageSquare, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import { Button } from "@/components/ui/button";
@@ -129,6 +129,16 @@ export default function Dashboard() {
           >
             <Plus className="w-4 h-4 mr-2" />
             Add Client
+          </Button>
+          <Button 
+            variant="outline"
+            asChild
+            className="border-violet-300 text-violet-700 hover:bg-violet-50"
+          >
+            <Link to={createPageUrl("CustomIntake")}>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Custom Intake
+            </Link>
           </Button>
         </div>
 

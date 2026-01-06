@@ -15,6 +15,7 @@ import Reports from './pages/Reports';
 import Resources from './pages/Resources';
 import Sessions from './pages/Sessions';
 import Team from './pages/Team';
+import CustomIntake from './pages/CustomIntake';
 import __Layout from './Layout.jsx';
 
 
@@ -36,6 +37,7 @@ export const PAGES = {
     "Resources": Resources,
     "Sessions": Sessions,
     "Team": Team,
+    "CustomIntake": CustomIntake,
 }
 
 export const pagesConfig = {
