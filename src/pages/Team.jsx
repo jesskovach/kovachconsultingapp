@@ -33,6 +33,20 @@ export default function Team() {
     refetchInterval: 5000
   });
 
+  const linkMutation = useMutation({
+    mutationFn: async (userEmail) => {
+      const response = await base44.functions.invoke('linkUserToClient', { userEmail });
+      return response.data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["allUsers"] });
+      toast.success(data.message || "User linked successfully");
+    },
+    onError: (error) => {
+      toast.error(error.response?.data?.error || "Failed to link user");
+    }
+  });
+
   const inviteMutation = useMutation({
     mutationFn: async ({ email, role }) => {
       // First, invite the user
@@ -192,7 +206,7 @@ export default function Team() {
                     className="p-4 hover:bg-slate-50 transition-colors"
                   >
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-1">
                         <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center">
                           <Mail className="w-5 h-5 text-amber-600" />
                         </div>
@@ -255,11 +269,27 @@ export default function Team() {
                       <p className="text-sm text-slate-500 truncate">{user.email}</p>
                       <p className="text-xs text-slate-400 mt-1">
                         Joined {format(new Date(user.created_date), "MMM d, yyyy")}
+                        {user.role === 'user' && !user.client_id && (
+                          <span className="text-amber-600 ml-2">• No client link</span>
+                        )}
                       </p>
                     </div>
-                    <Badge className={user.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}>
-                      {user.role}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge className={user.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}>
+                        {user.role}
+                      </Badge>
+                      {user.role === 'user' && !user.client_id && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => linkMutation.mutate(user.email)}
+                          disabled={linkMutation.isPending}
+                          className="text-xs"
+                        >
+                          Link to Client
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </motion.div>
               ))}
