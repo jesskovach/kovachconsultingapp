@@ -137,7 +137,7 @@ export default function Dashboard() {
           >
             <Link to={createPageUrl("CustomIntake")}>
               <Sparkles className="w-4 h-4 mr-2" />
-              Custom Intake
+              Intake Questionnaire
             </Link>
           </Button>
         </div>
