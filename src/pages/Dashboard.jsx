@@ -354,8 +354,57 @@ export default function Dashboard() {
             {/* LinkedIn Profile */}
             <LinkedInProfile />
 
-            {/* Goal of the Month */}
-            <GoalOfTheMonth />
+            {/* Unread Notifications */}
+            {unreadNotifications.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-lg font-semibold text-slate-800">Unread Notifications</h2>
+                  <Badge className="bg-red-100 text-red-700">
+                    {unreadNotifications.length}
+                  </Badge>
+                </div>
+                <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
+                  <div className="divide-y divide-slate-100">
+                    {unreadNotifications.slice(0, 5).map((notification, index) => (
+                      <motion.div
+                        key={notification.id}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                        className="p-4 hover:bg-slate-50 transition-colors cursor-pointer"
+                        onClick={async () => {
+                          await base44.entities.Notification.update(notification.id, { status: 'sent' });
+                        }}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="p-2 rounded-lg bg-blue-100 flex-shrink-0">
+                            <Bell className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-800">
+                              {notification.subject || notification.type?.replace(/_/g, ' ')}
+                            </p>
+                            <p className="text-xs text-slate-600 mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+                            <p className="text-xs text-slate-400 mt-1">
+                              {format(new Date(notification.created_date), "MMM d, h:mm a")}
+                            </p>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                  {unreadNotifications.length > 5 && (
+                    <div className="p-3 bg-slate-50 text-center">
+                      <p className="text-xs text-slate-500">
+                        + {unreadNotifications.length - 5} more unread
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Follow-Up Reminders */}
             <FollowUpReminders />
