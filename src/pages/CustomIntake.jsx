@@ -45,19 +45,30 @@ export default function CustomIntake() {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
+    
+    console.log("Form submission started", formData);
     
     // Basic validation
     if (!formData.current_work || !formData.capacity || !formData.decision_reason) {
+      console.log("Validation failed", {
+        current_work: formData.current_work,
+        capacity: formData.capacity,
+        decision_reason: formData.decision_reason
+      });
       toast.error("Please fill in the required fields");
       return;
     }
 
     setIsSubmitting(true);
+    console.log("Starting submission...");
     
     try {
       const { base44 } = await import("@/api/base44Client");
+      console.log("Base44 client imported");
+      
       const user = await base44.auth.me();
+      console.log("User fetched:", user?.email);
       
       if (!user) {
         toast.error("Please log in to submit the form");
@@ -66,6 +77,7 @@ export default function CustomIntake() {
       }
       
       const clients = await base44.entities.Client.filter({ email: user.email });
+      console.log("Clients found:", clients.length);
       
       if (clients.length === 0) {
         toast.error("Client profile not found. Please contact your coach.");
@@ -73,10 +85,12 @@ export default function CustomIntake() {
         return;
       }
       
+      console.log("Invoking backend function...");
       const response = await base44.functions.invoke('submitCustomIntake', {
         formData,
         clientId: clients[0].id
       });
+      console.log("Backend response:", response.data);
       
       if (response.data?.success) {
         setSubmitted(true);
