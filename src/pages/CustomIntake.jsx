@@ -459,8 +459,17 @@ export default function CustomIntake() {
               <button
                 type="button"
                 disabled={isSubmitting}
-                onClick={handleSubmit}
-                className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 py-6 text-lg rounded-lg text-white font-medium flex items-center justify-center transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  if (!isSubmitting) {
+                    handleSubmit(e);
+                  }
+                }}
+                className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 py-6 text-lg rounded-lg text-white font-medium flex items-center justify-center transition-colors touch-manipulation"
               >
                 {isSubmitting ? (
                   <>
