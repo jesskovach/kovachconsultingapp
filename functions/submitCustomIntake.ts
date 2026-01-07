@@ -49,6 +49,10 @@ You can review their responses in the client portal.
 
 Best regards,
 CoachCRM
+
+---
+
+If you'd like to unsubscribe and stop receiving these emails, click here.
       `
     });
 
