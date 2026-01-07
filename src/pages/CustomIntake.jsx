@@ -46,9 +46,18 @@ export default function CustomIntake() {
   };
 
   const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     
     console.log("Form submission started", formData);
+    
+    // Prevent double submission
+    if (isSubmitting) {
+      console.log("Already submitting, ignoring");
+      return;
+    }
     
     // Basic validation
     if (!formData.current_work || !formData.capacity || !formData.decision_reason) {
@@ -65,7 +74,11 @@ export default function CustomIntake() {
     console.log("Starting submission...");
     
     try {
-      const user = await base44.auth.me();
+      console.log("Fetching user...");
+      const user = await Promise.race([
+        base44.auth.me(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('User fetch timeout')), 10000))
+      ]);
       console.log("User fetched:", user?.email);
       
       if (!user) {
@@ -74,7 +87,11 @@ export default function CustomIntake() {
         return;
       }
       
-      const clients = await base44.entities.Client.filter({ email: user.email });
+      console.log("Fetching clients...");
+      const clients = await Promise.race([
+        base44.entities.Client.filter({ email: user.email }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Client fetch timeout')), 10000))
+      ]);
       console.log("Clients found:", clients.length);
       
       if (clients.length === 0) {
@@ -84,13 +101,17 @@ export default function CustomIntake() {
       }
       
       console.log("Invoking backend function...");
-      const response = await base44.functions.invoke('submitCustomIntake', {
-        formData,
-        clientId: clients[0].id
-      });
+      const response = await Promise.race([
+        base44.functions.invoke('submitCustomIntake', {
+          formData,
+          clientId: clients[0].id
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Submission timeout')), 30000))
+      ]);
       console.log("Backend response:", response.data);
       
       if (response.data?.success) {
+        console.log("Success! Setting submitted state...");
         setSubmitted(true);
         toast.success("Intake form submitted successfully!");
       } else {
@@ -98,7 +119,7 @@ export default function CustomIntake() {
       }
     } catch (error) {
       console.error("Intake submission error:", error);
-      toast.error(error.response?.data?.error || error.message || "Failed to submit intake form");
+      toast.error(error.message || "Failed to submit intake form. Please try again.");
       setIsSubmitting(false);
     }
   };
