@@ -65,9 +65,6 @@ export default function CustomIntake() {
     console.log("Starting submission...");
     
     try {
-      const { base44 } = await import("@/api/base44Client");
-      console.log("Base44 client imported");
-      
       const user = await base44.auth.me();
       console.log("User fetched:", user?.email);
       
