@@ -456,7 +456,7 @@ export default function CustomIntake() {
                 )}
               </button>
             </div>
-          </form>
+          </div>
         </motion.div>
       </div>
     </div>
