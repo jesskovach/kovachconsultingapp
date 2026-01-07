@@ -11,7 +11,6 @@ import StatsCard from "@/components/dashboard/StatsCard";
 import UpcomingSession from "@/components/dashboard/UpcomingSession";
 import ClientCard from "@/components/dashboard/ClientCard";
 import FollowUpReminders from "@/components/dashboard/FollowUpReminders";
-import GoalOfTheMonth from "@/components/dashboard/GoalOfTheMonth";
 import LinkedInProfile from "@/components/dashboard/LinkedInProfile";
 import SessionForm from "@/components/sessions/SessionForm";
 import ClientForm from "@/components/clients/ClientForm";
