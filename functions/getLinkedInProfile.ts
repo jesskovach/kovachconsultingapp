@@ -29,9 +29,7 @@ Deno.serve(async (req) => {
     return Response.json({
       profile: {
         name: profileData.name,
-        email: profileData.email,
         picture: profileData.picture,
-        locale: profileData.locale,
         sub: profileData.sub
       }
     });

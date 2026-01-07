@@ -78,23 +78,13 @@ export default function LinkedInProfile() {
               />
             )}
             <div className="flex-1">
-              <h3 className="font-semibold text-slate-800 text-lg mb-1">
+              <h3 className="font-semibold text-slate-800 text-lg mb-2">
                 {profile?.name}
               </h3>
-              {profile?.email && (
-                <p className="text-sm text-slate-600 mb-2">{profile.email}</p>
-              )}
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  <Linkedin className="w-3 h-3 mr-1" />
-                  Connected
-                </Badge>
-                {profile?.locale?.language && (
-                  <Badge variant="outline" className="text-xs">
-                    {profile.locale.language}_{profile.locale.country}
-                  </Badge>
-                )}
-              </div>
+              <Badge variant="outline" className="text-xs">
+                <Linkedin className="w-3 h-3 mr-1" />
+                Connected
+              </Badge>
             </div>
           </div>
         </CardContent>
