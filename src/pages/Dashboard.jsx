@@ -12,6 +12,7 @@ import UpcomingSession from "@/components/dashboard/UpcomingSession";
 import ClientCard from "@/components/dashboard/ClientCard";
 import FollowUpReminders from "@/components/dashboard/FollowUpReminders";
 import LinkedInProfile from "@/components/dashboard/LinkedInProfile";
+import IntakeSubmissions from "@/components/dashboard/IntakeSubmissions";
 import SessionForm from "@/components/sessions/SessionForm";
 import ClientForm from "@/components/clients/ClientForm";
 import { isAfter, isBefore, addDays, startOfDay, format } from "date-fns";
@@ -353,6 +354,9 @@ export default function Dashboard() {
           <div className="space-y-8">
             {/* LinkedIn Profile */}
             <LinkedInProfile />
+
+            {/* Intake Submissions */}
+            <IntakeSubmissions />
 
             {/* Unread Notifications */}
             {unreadNotifications.length > 0 && (
