@@ -4,6 +4,7 @@ import ClientHistory from './pages/ClientHistory';
 import ClientIntake from './pages/ClientIntake';
 import ClientPortal from './pages/ClientPortal';
 import Clients from './pages/Clients';
+import CustomIntake from './pages/CustomIntake';
 import Dashboard from './pages/Dashboard';
 import Onboarding from './pages/Onboarding';
 import OnboardingDetail from './pages/OnboardingDetail';
@@ -15,7 +16,6 @@ import Reports from './pages/Reports';
 import Resources from './pages/Resources';
 import Sessions from './pages/Sessions';
 import Team from './pages/Team';
-import CustomIntake from './pages/CustomIntake';
 import __Layout from './Layout.jsx';
 
 
@@ -26,6 +26,7 @@ export const PAGES = {
     "ClientIntake": ClientIntake,
     "ClientPortal": ClientPortal,
     "Clients": Clients,
+    "CustomIntake": CustomIntake,
     "Dashboard": Dashboard,
     "Onboarding": Onboarding,
     "OnboardingDetail": OnboardingDetail,
@@ -37,7 +38,6 @@ export const PAGES = {
     "Resources": Resources,
     "Sessions": Sessions,
     "Team": Team,
-    "CustomIntake": CustomIntake,
 }
 
 export const pagesConfig = {

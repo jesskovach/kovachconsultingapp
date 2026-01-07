@@ -304,10 +304,10 @@ export default function ClientPortal() {
                     size="lg"
                     className="bg-white text-violet-600 hover:bg-violet-50"
                   >
-                    <Link to={createPageUrl("CustomIntake")}>
+                    <a href={createPageUrl("CustomIntake")}>
                       <Sparkles className="w-4 h-4 mr-2" />
                       Start
-                    </Link>
+                    </a>
                   </Button>
                 </div>
               </motion.div>
