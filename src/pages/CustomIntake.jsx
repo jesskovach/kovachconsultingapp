@@ -164,7 +164,7 @@ export default function CustomIntake() {
           </div>
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="p-8">
+          <div className="p-8">
             {/* A bit of context */}
             <div className="mb-10">
               <h2 className="text-2xl font-bold text-slate-800 mb-6">A bit of context</h2>
