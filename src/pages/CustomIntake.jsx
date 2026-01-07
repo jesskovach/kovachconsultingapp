@@ -58,23 +58,35 @@ export default function CustomIntake() {
     try {
       const { base44 } = await import("@/api/base44Client");
       const user = await base44.auth.me();
-      const clients = await base44.entities.Client.filter({ email: user.email });
       
-      if (clients.length === 0) {
-        toast.error("Client profile not found");
+      if (!user) {
+        toast.error("Please log in to submit the form");
         setIsSubmitting(false);
         return;
       }
       
-      await base44.functions.invoke('submitCustomIntake', {
+      const clients = await base44.entities.Client.filter({ email: user.email });
+      
+      if (clients.length === 0) {
+        toast.error("Client profile not found. Please contact your coach.");
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const response = await base44.functions.invoke('submitCustomIntake', {
         formData,
         clientId: clients[0].id
       });
       
-      setSubmitted(true);
-      toast.success("Intake form submitted successfully!");
+      if (response.data?.success) {
+        setSubmitted(true);
+        toast.success("Intake form submitted successfully!");
+      } else {
+        throw new Error(response.data?.error || "Submission failed");
+      }
     } catch (error) {
-      toast.error(error.response?.data?.error || "Failed to submit intake form");
+      console.error("Intake submission error:", error);
+      toast.error(error.response?.data?.error || error.message || "Failed to submit intake form");
       setIsSubmitting(false);
     }
   };
