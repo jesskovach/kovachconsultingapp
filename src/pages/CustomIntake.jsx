@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
+import { base44 } from "@/api/base44Client";
 
 export default function CustomIntake() {
   const [submitted, setSubmitted] = useState(false);
