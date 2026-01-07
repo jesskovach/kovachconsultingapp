@@ -337,7 +337,7 @@ export default function CustomIntake() {
 
                 <div>
                   <Label className="text-slate-700 font-medium mb-2 block">
-                    Looking ahead a few months, what would you like to feel more true about: your work or your life?
+                    In a few months, what do you hope has changed for you—at work or in your life?
                   </Label>
                   <Textarea
                     value={formData.future_feeling}
