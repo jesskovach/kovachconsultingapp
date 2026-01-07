@@ -72,6 +72,7 @@ export default function Dashboard() {
   const completedSessions = sessions.filter((s) => s.status === "completed");
   const activeGoals = goals.filter((g) => g.status === "in_progress");
   const recentNotifications = notifications.slice(0, 5);
+  const unreadNotifications = notifications.filter(n => n.status === 'pending');
   
   // Only count onboarding checklists for clients that actually exist
   const clientIds = new Set(clients.map(c => c.id));
