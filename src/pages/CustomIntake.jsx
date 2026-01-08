@@ -120,6 +120,7 @@ export default function CustomIntake() {
     } catch (error) {
       console.error("Intake submission error:", error);
       toast.error(error.message || "Failed to submit intake form. Please try again.");
+    } finally {
       setIsSubmitting(false);
     }
   };
