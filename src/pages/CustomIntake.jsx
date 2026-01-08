@@ -456,20 +456,11 @@ export default function CustomIntake() {
             </div>
 
             <div className="mt-8 pt-8 border-t border-slate-200">
-              <button
+              <Button
                 type="button"
                 disabled={isSubmitting}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }}
-                onTouchEnd={(e) => {
-                  e.preventDefault();
-                  if (!isSubmitting) {
-                    handleSubmit(e);
-                  }
-                }}
-                className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 py-6 text-lg rounded-lg text-white font-medium flex items-center justify-center transition-colors touch-manipulation"
+                onClick={handleSubmit}
+                className="w-full bg-violet-600 hover:bg-violet-700 disabled:bg-violet-400 py-6 text-lg h-auto"
               >
                 {isSubmitting ? (
                   <>
@@ -482,7 +473,7 @@ export default function CustomIntake() {
                     Submit Intake Form
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </div>
         </motion.div>
