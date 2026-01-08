@@ -7,7 +7,7 @@ import { createPageUrl } from "@/utils";
 import { format } from "date-fns";
 import { 
   ArrowLeft, Mail, Phone, Building2, Briefcase, Calendar, 
-  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink, Send, MessageSquare, CreditCard
+  Target, Edit2, Plus, Trash2, MoreHorizontal, Loader2, Star, BookOpen, ExternalLink, Send, MessageSquare, CreditCard, FileText
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -117,6 +117,12 @@ export default function ClientDetail() {
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
     queryFn: () => base44.auth.me()
+  });
+
+  const { data: questionnaires = [] } = useQuery({
+    queryKey: ["questionnaires", clientId],
+    queryFn: () => base44.entities.Questionnaire.filter({ client_id: clientId }, "-created_date"),
+    enabled: !!clientId
   });
 
   const updateClientMutation = useMutation({
@@ -357,6 +363,10 @@ export default function ClientDetail() {
             </TabsTrigger>
             <TabsTrigger value="resources" className="data-[state=active]:bg-slate-100">
               Resources ({assignedResources.length})
+            </TabsTrigger>
+            <TabsTrigger value="intake" className="data-[state=active]:bg-slate-100">
+              <FileText className="w-4 h-4 mr-2" />
+              Intake Forms ({questionnaires.length})
             </TabsTrigger>
             <TabsTrigger value="notes" className="data-[state=active]:bg-slate-100">
               Notes
@@ -667,6 +677,97 @@ export default function ClientDetail() {
                 >
                   Assign the first resource
                 </Button>
+              </div>
+            )}
+          </TabsContent>
+
+          {/* Intake Forms Tab */}
+          <TabsContent value="intake" className="space-y-4">
+            <h3 className="font-semibold text-slate-800 mb-4">Intake Questionnaires</h3>
+            {questionnaires.length > 0 ? (
+              <div className="space-y-4">
+                {questionnaires.map((questionnaire, index) => (
+                  <motion.div
+                    key={questionnaire.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="bg-white rounded-xl border border-slate-100 p-6"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <FileText className="w-5 h-5 text-violet-600" />
+                          <h4 className="font-semibold text-slate-800 capitalize">
+                            {questionnaire.type} Intake
+                          </h4>
+                          {questionnaire.status === "completed" && (
+                            <Badge className="bg-emerald-100 text-emerald-700">Completed</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-500">
+                          Submitted {format(new Date(questionnaire.completed_date || questionnaire.created_date), "MMM d, yyyy 'at' h:mm a")}
+                        </p>
+                      </div>
+                    </div>
+
+                    {questionnaire.responses && (
+                      <div className="space-y-4 mt-6">
+                        {Object.entries(questionnaire.responses).map(([key, value]) => {
+                          if (!value || (Array.isArray(value) && value.length === 0)) return null;
+                          
+                          const questionLabels = {
+                            current_work: "What kind of work are you doing right now?",
+                            environment_feel: "How does your current environment feel?",
+                            capacity: "How's your capacity at the moment?",
+                            decision_reason: "What made you decide to book this conversation now?",
+                            specific_situation: "Is there a specific situation, decision, or pattern that's been on your mind?",
+                            most_important: "What feels most important about it?",
+                            feels_unclear: "What feels unclear, stuck, or hard to name right now?",
+                            pressures_constraints: "What pressures or constraints feel most present for you lately?",
+                            outside_control: "Are there parts of this situation that feel outside your control?",
+                            complex_response: "When things get complex or high-stakes, what do you usually do?",
+                            unhelpful_advice: "What kinds of advice or support have not been helpful for you?",
+                            impact_cost: "If this situation has been costing you something, what has that looked like?",
+                            future_feeling: "In a few months, what do you hope has changed?",
+                            worthwhile: "What would make this conversation feel worthwhile to you?",
+                            previous_coaching: "Have you worked with a coach or advisor before?",
+                            previous_coaching_details: "Tell us about your previous coaching experience",
+                            anything_else: "Is there anything else you want me to know?",
+                            what_makes_useful: "What would make this coaching conversation useful for you?",
+                            current_challenges: "What are your biggest leadership challenges right now?",
+                            desired_outcomes: "What specific outcomes would you like from our coaching relationship?",
+                            support_needed: "What kind of support do you need most right now?",
+                            obstacles: "What obstacles or barriers are you currently facing?",
+                            strengths: "What strengths can you leverage in achieving your goals?",
+                            growth_areas: "What areas would you most like to develop or improve?",
+                            leadership_style: "How would you describe your leadership style?",
+                            success_metrics: "How will you measure success in our coaching engagement?",
+                            time_commitment: "What time commitment can you make to coaching and personal development?",
+                            preferred_communication: "What's your preferred communication style and frequency?",
+                            additional_info: "Is there anything else you'd like me to know?"
+                          };
+                          
+                          return (
+                            <div key={key} className="pb-4 border-b border-slate-100 last:border-0">
+                              <p className="text-sm font-medium text-slate-700 mb-2">
+                                {questionLabels[key] || key.replace(/_/g, ' ')}
+                              </p>
+                              <p className="text-sm text-slate-600 whitespace-pre-wrap">
+                                {Array.isArray(value) ? value.join(", ") : value}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12 bg-white rounded-xl border border-slate-100">
+                <FileText className="w-12 h-12 text-slate-200 mx-auto mb-3" />
+                <p className="text-slate-500">No intake forms submitted yet</p>
               </div>
             )}
           </TabsContent>
