@@ -82,7 +82,7 @@ export default function ClientDetail() {
       const response = await base44.functions.invoke('getClientGoals', { clientId });
       return response.data.goals || [];
     },
-    enabled: !!clientId
+    enabled: !!clientId && clientId !== 'undefined' && clientId !== 'null'
   });
 
   const { data: allClients = [] } = useQuery({

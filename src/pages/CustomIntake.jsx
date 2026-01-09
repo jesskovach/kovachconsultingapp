@@ -106,7 +106,7 @@ export default function CustomIntake() {
           formData,
           clientId: clients[0].id
         }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Submission timeout')), 30000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Submission timeout - please check your connection')), 15000))
       ]);
       console.log("Backend response:", response.data);
       

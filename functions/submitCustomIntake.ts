@@ -20,41 +20,28 @@ Deno.serve(async (req) => {
       responses: formData
     });
 
-    // Get client info
-    const client = await base44.asServiceRole.entities.Client.list();
-    const clientInfo = client.find(c => c.id === clientId);
+    // Get client info - use filter instead of list for better performance
+    const clients = await base44.asServiceRole.entities.Client.filter({ id: clientId });
+    const clientInfo = clients[0];
 
-    // Create in-app notification
-    await base44.asServiceRole.entities.Notification.create({
-      type: 'onboarding_update',
-      recipient_email: clientInfo?.created_by || user.email,
-      recipient_name: 'Coach',
-      client_id: clientId,
-      subject: 'New Custom Intake Submitted',
-      message: `${clientInfo?.name || user.full_name} has completed their custom intake questionnaire.`,
-      status: 'sent',
-      sent_date: new Date().toISOString()
-    });
-
-    // Send email notification
-    await base44.asServiceRole.integrations.Core.SendEmail({
-      to: clientInfo?.created_by || user.email,
-      subject: 'New Custom Intake Questionnaire Submitted',
-      body: `
-Hello,
-
-${clientInfo?.name || user.full_name} has completed their custom intake questionnaire.
-
-You can review their responses in the client portal.
-
-Best regards,
-CoachCRM
-
----
-
-If you'd like to unsubscribe and stop receiving these emails, click here.
-      `
-    });
+    // Create notifications and send email asynchronously (don't wait)
+    Promise.all([
+      base44.asServiceRole.entities.Notification.create({
+        type: 'onboarding_update',
+        recipient_email: clientInfo?.created_by || user.email,
+        recipient_name: 'Coach',
+        client_id: clientId,
+        subject: 'New Custom Intake Submitted',
+        message: `${clientInfo?.name || user.full_name} has completed their custom intake questionnaire.`,
+        status: 'sent',
+        sent_date: new Date().toISOString()
+      }),
+      base44.asServiceRole.integrations.Core.SendEmail({
+        to: clientInfo?.created_by || user.email,
+        subject: 'New Custom Intake Questionnaire Submitted',
+        body: `Hello,\n\n${clientInfo?.name || user.full_name} has completed their custom intake questionnaire.\n\nYou can review their responses in the client portal.\n\nBest regards,\nCoachCRM`
+      })
+    ]).catch(err => console.error('Notification error:', err));
 
     return Response.json({ 
       success: true,
