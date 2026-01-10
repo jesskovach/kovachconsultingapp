@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { useAuth } from "@/hooks/useAuth";
-import { base44 } from "@/lib/base44";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 
 /**
  * Custom Intake Page
@@ -10,14 +10,8 @@ import { base44 } from "@/lib/base44";
  * - Mobile-safe submission (native button, no <form> submit reliance)
  * - Double-submit prevention + timeout + clear user feedback
  * - Console logs that help debug iOS / user-mapping issues
- *
- * IMPORTANT:
- * Update FUNCTION_NAME to match your Base44 function name exactly.
- * In the builder, your function is likely called something like:
- *  - "submit Custom Intake" (with spaces) OR
- *  - "submitCustomIntake"
  */
-const FUNCTION_NAME = "submit Custom Intake"; // <-- change if needed
+const FUNCTION_NAME = "submitCustomIntake";
 
 const STAGE_OPTIONS = [
   { value: "initial", label: "Initial Intake" },
@@ -53,7 +47,11 @@ function safeTrim(v) {
 
 export default function CustomIntake() {
   const nav = useNavigate();
-  const { user } = useAuth();
+  
+  const { data: user } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me()
+  });
 
   const [intakeStage, setIntakeStage] = useState("initial");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -136,11 +134,31 @@ export default function CustomIntake() {
       console.log(payload.formData);
       console.log("Starting submission...");
       console.log("Fetching user...");
-      console.log("User fetched:", user?.email || "(no email)");
+      
+      const currentUser = await base44.auth.me();
+      console.log("User fetched:", currentUser?.email || "(no email)");
+      
+      if (!currentUser) {
+        throw new Error("Please log in to submit the form");
+      }
+      
+      console.log("Fetching clients...");
+      const clients = await base44.entities.Client.filter({ email: currentUser.email });
+      console.log("Clients found:", clients.length);
+      
+      if (clients.length === 0) {
+        throw new Error("Client profile not found. Please contact your coach.");
+      }
+
+      // Add clientId to payload
+      const submitPayload = {
+        ...payload,
+        clientId: clients[0].id
+      };
 
       // 25s is a reasonable ceiling for mobile networks; adjust if you want.
       const res = await withTimeout(
-        base44.functions.invoke(FUNCTION_NAME, payload),
+        base44.functions.invoke(FUNCTION_NAME, submitPayload),
         25000,
         "Submission timed out. If this is iOS, check the Network tab for a 400/403 on related requests."
       );
