@@ -1,540 +1,684 @@
-import React, { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { base44 } from "@/api/base44Client";
-import { useQuery } from "@tanstack/react-query";
+// pages/CustomIntake.jsx
+// Drop-in replacement for your Custom Intake page.
+// What it does:
+// 1) Uses the logged-in user's email (required) as the identity.
+// 2) Looks up a Client record by that email.
+//    - If none exists, it blocks submission with: “This login email doesn’t match our records.”
+// 3) Saves the intake as a Questionnaire record (client_id + client_email + intake_type + submitted_at + responses).
+// 4) Upserts a UserAuthProfile record (user_email + last_login_provider + last_login_at + optional UA/device).
+// 5) Shows a reminder banner: “You last signed in with X (email). Please use the same method next time…”
+//
+// Paste this whole file into Base44 → Code → pages → CustomIntake (or wherever your CustomIntake page lives).
 
-/**
- * Custom Intake Page
- * - Milestone selector (Initial / 30 / 60 / 90 / Annual)
- * - Mobile-safe submission (native button, no <form> submit reliance)
- * - Double-submit prevention + timeout + clear user feedback
- * - Console logs that help debug iOS / user-mapping issues
- */
-const FUNCTION_NAME = "submitCustomIntake";
+import React, { useEffect, useMemo, useState } from "react";
 
-const STAGE_OPTIONS = [
-  { value: "initial", label: "Initial Intake" },
-  { value: "checkin_30", label: "30-Day Check-in" },
-  { value: "checkin_60", label: "60-Day Check-in" },
-  { value: "checkin_90", label: "90-Day Check-in" },
-  { value: "annual_reset", label: "Annual Reset" },
-];
+// ✅ IMPORTANT: set this to your app id (already in your logs)
+const APP_ID = "6957e3518343d5240794ce38";
 
-const ENVIRONMENT_FEEL_OPTIONS = [
-  "High-pressure",
-  "Supportive",
-  "Unclear expectations",
-  "Chaotic / reactive",
-  "Stable / predictable",
-  "High autonomy",
-  "Low autonomy",
-  "Values-aligned",
-  "Misaligned",
-];
+// --- tiny helpers ---
+async function safeUserMe() {
+  // Base44 often exposes User.me() in the app runtime.
+  // If it's unavailable, we fall back to decoding the JWT `sub` from localStorage (best-effort).
+  try {
+    // eslint-disable-next-line no-undef
+    if (typeof User !== "undefined" && User?.me) {
+      // eslint-disable-next-line no-undef
+      return await User.me();
+    }
+  } catch (_) {}
 
-function withTimeout(promise, ms, message = "Request timed out") {
-  let timeoutId;
-  const timeoutPromise = new Promise((_, reject) => {
-    timeoutId = setTimeout(() => reject(new Error(message)), ms);
-  });
-  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+  // Fallback: try to read token from storage and decode `sub`
+  // (If this fails, we simply return null and the UI will instruct the user.)
+  try {
+    const token =
+      localStorage.getItem("base44_token") ||
+      localStorage.getItem("token") ||
+      sessionStorage.getItem("base44_token") ||
+      sessionStorage.getItem("token");
+
+    if (!token) return null;
+
+    const [, payload] = token.split(".");
+    if (!payload) return null;
+
+    const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
+    const email = json?.sub || json?.email;
+    if (!email) return null;
+
+    return { email };
+  } catch (_) {
+    return null;
+  }
 }
 
-function safeTrim(v) {
-  return typeof v === "string" ? v.trim() : v;
+function guessLoginProvider() {
+  // We can't reliably know provider from the browser in Base44 without a platform hint.
+  // If you later add a server-side hook, you can overwrite this.
+  return "unknown"; // enum: password, google, microsoft, facebook, unknown
+}
+
+function nowIso() {
+  return new Date().toISOString();
+}
+
+async function apiFetch(path, options = {}) {
+  // Always include credentials so session auth works cross-browser.
+  const res = await fetch(path, {
+    credentials: "include",
+    ...options,
+    headers: {
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  // Base44 returns JSON for most entity endpoints.
+  const text = await res.text();
+  let data = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch (_) {
+    data = text;
+  }
+
+  if (!res.ok) {
+    const message =
+      (data && (data.error || data.message)) ||
+      (typeof data === "string" ? data : null) ||
+      `Request failed (${res.status})`;
+    const err = new Error(message);
+    err.status = res.status;
+    err.data = data;
+    throw err;
+  }
+
+  return data;
+}
+
+async function findOneEntity(entityName, queryObj) {
+  // Base44 entity read w/ query string `q=<json>`
+  const q = encodeURIComponent(JSON.stringify(queryObj));
+  const url = `/api/apps/${APP_ID}/entities/${entityName}?q=${q}`;
+  const data = await apiFetch(url, { method: "GET" });
+
+  // Base44 sometimes returns { data: [...] } or just [...]
+  const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+  return list[0] || null;
+}
+
+async function listEntities(entityName, queryObj, sortObj, limit = 50) {
+  const params = new URLSearchParams();
+  if (queryObj) params.set("q", JSON.stringify(queryObj));
+  if (sortObj) params.set("sort", JSON.stringify(sortObj));
+  if (limit) params.set("limit", String(limit));
+
+  const url = `/api/apps/${APP_ID}/entities/${entityName}?${params.toString()}`;
+  const data = await apiFetch(url, { method: "GET" });
+  return Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+}
+
+async function createEntity(entityName, payload) {
+  const url = `/api/apps/${APP_ID}/entities/${entityName}`;
+  return apiFetch(url, { method: "POST", body: JSON.stringify(payload) });
+}
+
+async function updateEntity(entityName, id, payload) {
+  const url = `/api/apps/${APP_ID}/entities/${entityName}/${id}`;
+  return apiFetch(url, { method: "PUT", body: JSON.stringify(payload) });
+}
+
+async function upsertUserAuthProfile(userEmail) {
+  const provider = guessLoginProvider();
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+
+  const existing = await findOneEntity("UserAuthProfile", { user_email: userEmail });
+  const payload = {
+    user_email: userEmail,
+    last_login_provider: provider, // password/google/microsoft/facebook/unknown
+    last_login_at: nowIso(),
+    last_login_user_agent: ua,
+  };
+
+  if (existing?.id) {
+    return updateEntity("UserAuthProfile", existing.id, payload);
+  }
+  return createEntity("UserAuthProfile", payload);
+}
+
+function Field({ label, children, hint }) {
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontWeight: 600, marginBottom: 6 }}>{label}</div>
+      {children}
+      {hint ? (
+        <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>{hint}</div>
+      ) : null}
+    </div>
+  );
+}
+
+function TextInput({ id, value, onChange, placeholder }) {
+  return (
+    <input
+      id={id}
+      name={id}
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      autoComplete="off"
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(0,0,0,0.15)",
+        fontSize: 14,
+      }}
+    />
+  );
+}
+
+function TextArea({ id, value, onChange, placeholder }) {
+  return (
+    <textarea
+      id={id}
+      name={id}
+      value={value}
+      placeholder={placeholder}
+      onChange={(e) => onChange(e.target.value)}
+      rows={4}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(0,0,0,0.15)",
+        fontSize: 14,
+        resize: "vertical",
+      }}
+    />
+  );
+}
+
+function Select({ id, value, onChange, options }) {
+  return (
+    <select
+      id={id}
+      name={id}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(0,0,0,0.15)",
+        fontSize: 14,
+        background: "white",
+      }}
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
+}
+
+function CheckboxGroup({ id, values, onChange, options }) {
+  const set = new Set(values || []);
+  return (
+    <div id={id} style={{ display: "grid", gap: 8 }}>
+      {options.map((opt) => {
+        const checked = set.has(opt.value);
+        return (
+          <label key={opt.value} style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              type="checkbox"
+              name={`${id}[]`}
+              checked={checked}
+              onChange={(e) => {
+                const next = new Set(values || []);
+                if (e.target.checked) next.add(opt.value);
+                else next.delete(opt.value);
+                onChange(Array.from(next));
+              }}
+            />
+            <span>{opt.label}</span>
+          </label>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function CustomIntake() {
-  const nav = useNavigate();
-  
-  const { data: user } = useQuery({
-    queryKey: ["currentUser"],
-    queryFn: () => base44.auth.me()
-  });
+  const [loading, setLoading] = useState(true);
+  const [userEmail, setUserEmail] = useState("");
+  const [client, setClient] = useState(null);
+  const [authProfile, setAuthProfile] = useState(null);
 
-  const [intakeStage, setIntakeStage] = useState("initial");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  // intake “milestone” selector (initial / 30-60-90 / annual reset)
+  const [intakeType, setIntakeType] = useState("initial");
 
-  // Fields observed from your console logs
-  const [formData, setFormData] = useState({
-    current_work: "",
-    capacity: "",
-    decision_reason: "",
-    environment_feel: [],
-    feels_unclear: "",
-    future_feeling: "",
-    pressures_constraints: "",
-    outside_control: "",
-    most_important: "",
-    specific_situation: "",
-    unhelpful_advice: "",
-    complex_response: "",
-    worthwhile: "",
-    impact_cost: "",
-    previous_coaching: "No",
-    previous_coaching_details: "",
-    anything_else: "",
-  });
+  // form fields (match what you were logging)
+  const [previousCoaching, setPreviousCoaching] = useState("No");
+  const [previousCoachingDetails, setPreviousCoachingDetails] = useState("");
 
-  const canSubmit = useMemo(() => {
-    // Keep validation light so it never blocks you from testing.
-    // If you want required fields, tell me which ones.
-    return !isSubmitting;
-  }, [isSubmitting]);
+  const [currentWork, setCurrentWork] = useState("");
+  const [specificSituation, setSpecificSituation] = useState("");
+  const [pressuresConstraints, setPressuresConstraints] = useState("");
+  const [capacity, setCapacity] = useState("Heavy but manageable");
+  const [environmentFeel, setEnvironmentFeel] = useState(["High-pressure"]);
+  const [outsideControl, setOutsideControl] = useState("");
+  const [decisionReason, setDecisionReason] = useState("");
+  const [mostImportant, setMostImportant] = useState("");
+  const [feelsUnclear, setFeelsUnclear] = useState("");
+  const [unhelpfulAdvice, setUnhelpfulAdvice] = useState("");
+  const [futureFeeling, setFutureFeeling] = useState("");
+  const [impactCost, setImpactCost] = useState("");
+  const [worthwhile, setWorthwhile] = useState("");
+  const [complexResponse, setComplexResponse] = useState("");
+  const [anythingElse, setAnythingElse] = useState("");
+  const [reflectionUpdate, setReflectionUpdate] = useState(""); // “Reflection / Update” field (does not overwrite originals)
 
-  const setField = (key, value) => {
-    setFormData((prev) => ({ ...prev, [key]: value }));
-  };
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const toggleMulti = (key, option) => {
-    setFormData((prev) => {
-      const current = Array.isArray(prev[key]) ? prev[key] : [];
-      const next = current.includes(option)
-        ? current.filter((x) => x !== option)
-        : [...current, option];
-      return { ...prev, [key]: next };
-    });
-  };
+  const cannotSubmitReason = useMemo(() => {
+    if (!userEmail) return "We couldn’t detect your login email. Please log out and log back in.";
+    if (!client?.id) return "This login email doesn’t match our records.";
+    return "";
+  }, [userEmail, client]);
 
-  const normalizePayload = (data) => {
-    // Keep payload clean / stable across devices
-    const cleaned = {};
-    for (const [k, v] of Object.entries(data)) {
-      if (Array.isArray(v)) cleaned[k] = v;
-      else cleaned[k] = safeTrim(v);
-    }
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      setError("");
+      setSuccess("");
 
-    // If previous_coaching is No, clear details
-    if (cleaned.previous_coaching !== "Yes") {
-      cleaned.previous_coaching_details = "";
-    }
+      try {
+        const me = await safeUserMe();
+        const email = me?.email || "";
+        setUserEmail(email);
 
-    return cleaned;
-  };
+        if (!email) {
+          setLoading(false);
+          return;
+        }
 
-  const handleSubmit = async () => {
-    if (!canSubmit) return;
+        // Upsert auth profile (reminder banner uses this)
+        try {
+          await upsertUserAuthProfile(email);
+        } catch (_) {
+          // non-fatal
+        }
 
-    setSubmitError("");
-    setSubmitSuccess(false);
+        // Fetch latest auth profile
+        const profile = await findOneEntity("UserAuthProfile", { user_email: email });
+        setAuthProfile(profile);
+
+        // Find client by email
+        const foundClient = await findOneEntity("Client", { email });
+        setClient(foundClient || null);
+
+        setLoading(false);
+      } catch (e) {
+        setLoading(false);
+        setError(e?.message || "Unable to load intake.");
+      }
+    })();
+  }, []);
+
+  async function handleSubmit() {
+    if (submitting) return;
+    setSubmitting(true);
+    setError("");
+    setSuccess("");
 
     try {
-      setIsSubmitting(true);
+      if (cannotSubmitReason) {
+        throw new Error(cannotSubmitReason);
+      }
 
-      const payload = {
-        formData: normalizePayload(formData),
-        intakeStage,
+      // Build responses object (this is what you want to preserve as original answers)
+      const responses = {
+        previous_coaching: previousCoaching,
+        previous_coaching_details: previousCoaching === "Yes" ? previousCoachingDetails : "",
+        current_work: currentWork,
+        specific_situation: specificSituation,
+        pressures_constraints: pressuresConstraints,
+        capacity,
+        environment_feel: environmentFeel,
+        outside_control: outsideControl,
+        decision_reason: decisionReason,
+        most_important: mostImportant,
+        feels_unclear: feelsUnclear,
+        unhelpful_advice: unhelpfulAdvice,
+        future_feeling: futureFeeling,
+        impact_cost: impactCost,
+        worthwhile,
+        complex_response: complexResponse,
+        anything_else: anythingElse,
       };
 
-      // Debug logs (helpful for iOS)
-      console.log("Form submission started");
-      console.log(payload.formData);
-      console.log("Starting submission...");
-      console.log("Fetching user...");
-      
-      const currentUser = await base44.auth.me();
-      console.log("User fetched:", currentUser?.email || "(no email)");
-      
-      if (!currentUser) {
-        throw new Error("Please log in to submit the form");
-      }
-      
-      console.log("Fetching clients...");
-      const clients = await base44.entities.Client.filter({ email: currentUser.email });
-      console.log("Clients found:", clients.length);
-      
-      if (clients.length === 0) {
-        throw new Error("Client profile not found. Please contact your coach.");
-      }
+      // Create Questionnaire record
+      const created = await createEntity("Questionnaire", {
+        client_id: client.id,
+        client_email: userEmail,
+        intake_type: intakeType, // initial | checkin_30_60_90 | annual_reset
+        submitted_at: nowIso(),
+        responses,
+        reflection_update: reflectionUpdate || "", // safe “typos/clarifying notes” channel
+        created_by_email: userEmail,
+      });
 
-      // Add clientId to payload
-      const submitPayload = {
-        ...payload,
-        clientId: clients[0].id
-      };
+      // Refresh auth profile “last login” (optional)
+      try {
+        await upsertUserAuthProfile(userEmail);
+        const profile = await findOneEntity("UserAuthProfile", { user_email: userEmail });
+        setAuthProfile(profile);
+      } catch (_) {}
 
-      // 25s is a reasonable ceiling for mobile networks; adjust if you want.
-      const res = await withTimeout(
-        base44.functions.invoke(FUNCTION_NAME, submitPayload),
-        25000,
-        "Submission timed out. If this is iOS, check the Network tab for a 400/403 on related requests."
-      );
+      setSuccess("Submitted! Your intake form has been saved.");
+      setSubmitting(false);
 
-      console.log("Submission response:", res);
-
-      // Common Base44 patterns: res.success or res.data.success
-      const success =
-        res?.success === true ||
-        res?.data?.success === true ||
-        res?.data?.ok === true;
-
-      if (!success) {
-        // Try to extract a useful message
-        const msg =
-          res?.error ||
-          res?.data?.error ||
-          "Submission failed. Check console + Network for the failing request.";
-        throw new Error(msg);
-      }
-
-      setSubmitSuccess(true);
-
-      // Optional: send the user back to the dashboard/portal
-      // nav(createPageUrl("Dashboard"));
-      // or: nav(createPageUrl("ClientPortal"));
-
-    } catch (err) {
-      console.error("Submission error:", err);
-      setSubmitError(err?.message || "Submission error");
-    } finally {
-      setIsSubmitting(false);
+      // Optional: you can redirect back to portal home if you want:
+      // window.location.href = "/ClientPortal";
+      console.log("Intake saved:", created);
+    } catch (e) {
+      setSubmitting(false);
+      setError(e?.message || "Submission failed.");
+      console.error("Intake submit error:", e);
     }
-  };
+  }
 
-  const handleCancel = () => {
-    nav(createPageUrl("ClientPortal"));
-  };
+  // “Quick access to completed forms” (client-side dropdown)
+  // This shows THEIR own questionnaires in the intake page immediately after submission, too.
+  const [myIntakes, setMyIntakes] = useState([]);
+  const [selectedIntakeId, setSelectedIntakeId] = useState("");
+
+  async function loadMyIntakes() {
+    if (!client?.id) return;
+    try {
+      const list = await listEntities(
+        "Questionnaire",
+        { client_id: client.id },
+        { submitted_at: -1 },
+        50
+      );
+      setMyIntakes(list);
+      if (!selectedIntakeId && list[0]?.id) setSelectedIntakeId(list[0].id);
+    } catch (_) {
+      // non-fatal
+    }
+  }
+
+  useEffect(() => {
+    if (client?.id) loadMyIntakes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client?.id]);
+
+  const selectedIntake = useMemo(() => {
+    return myIntakes.find((x) => x.id === selectedIntakeId) || null;
+  }, [myIntakes, selectedIntakeId]);
 
   return (
-    <div className="p-4 max-w-3xl mx-auto space-y-4">
-      <div className="rounded-2xl border bg-white p-4 shadow-sm">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <div className="text-xl font-semibold">Client Intake</div>
-            <div className="text-sm text-gray-600">
-              Please answer honestly—this helps shape our work together.
-            </div>
-          </div>
-          <button
-            type="button"
-            className="px-3 py-2 rounded-xl border bg-gray-50 hover:bg-gray-100"
-            onClick={handleCancel}
-          >
-            Back
-          </button>
-        </div>
+    <div style={{ maxWidth: 860, margin: "0 auto", padding: 18 }}>
+      <h1 style={{ margin: "8px 0 6px" }}>Client Intake</h1>
 
-        {/* Milestone selector */}
-        <div className="mt-4">
-          <label className="text-sm font-medium" htmlFor="intakeStage">
-            Intake type
-          </label>
-          <select
-            id="intakeStage"
-            name="intakeStage"
-            className="mt-1 border rounded-xl px-3 py-2 w-full"
-            value={intakeStage}
-            onChange={(e) => setIntakeStage(e.target.value)}
-          >
-            {STAGE_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+      {authProfile?.last_login_provider ? (
+        <div
+          style={{
+            padding: 12,
+            borderRadius: 12,
+            background: "rgba(0,0,0,0.04)",
+            marginBottom: 14,
+            lineHeight: 1.4,
+          }}
+        >
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>Sign-in reminder</div>
+          <div>
+            You last signed in with{" "}
+            <b>{String(authProfile.last_login_provider).toUpperCase()}</b> ({userEmail || "—"}).
+            Please use the same method next time to access your forms.
+          </div>
         </div>
+      ) : null}
+
+      {loading ? <div>Loading…</div> : null}
+      {error ? (
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,0,0,0.08)" }}>
+          {error}
+        </div>
+      ) : null}
+      {success ? (
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(0,128,0,0.10)" }}>
+          {success}
+        </div>
+      ) : null}
+
+      {!loading && cannotSubmitReason ? (
+        <div style={{ padding: 12, borderRadius: 12, background: "rgba(255,165,0,0.14)", marginTop: 12 }}>
+          <div style={{ fontWeight: 700, marginBottom: 6 }}>Access issue</div>
+          <div>{cannotSubmitReason}</div>
+        </div>
+      ) : null}
+
+      <div style={{ marginTop: 18, padding: 14, borderRadius: 16, border: "1px solid rgba(0,0,0,0.08)" }}>
+        <h2 style={{ marginTop: 0 }}>Intake milestone</h2>
+        <Field label="Which intake is this?">
+          <Select
+            id="intake_type"
+            value={intakeType}
+            onChange={setIntakeType}
+            options={[
+              { value: "initial", label: "Initial intake" },
+              { value: "checkin_30_60_90", label: "30/60/90 day check-in" },
+              { value: "annual_reset", label: "Annual reset" },
+            ]}
+          />
+        </Field>
+
+        <h2 style={{ marginTop: 18 }}>Questions</h2>
+
+        <Field label="Have you worked with a coach before?">
+          <Select
+            id="previous_coaching"
+            value={previousCoaching}
+            onChange={setPreviousCoaching}
+            options={[
+              { value: "No", label: "No" },
+              { value: "Yes", label: "Yes" },
+            ]}
+          />
+        </Field>
+
+        {previousCoaching === "Yes" ? (
+          <Field label="If yes, what was helpful / unhelpful?">
+            <TextArea
+              id="previous_coaching_details"
+              value={previousCoachingDetails}
+              onChange={setPreviousCoachingDetails}
+              placeholder="Share a little context…"
+            />
+          </Field>
+        ) : null}
+
+        <Field label="What’s going on in your work right now?">
+          <TextArea id="current_work" value={currentWork} onChange={setCurrentWork} />
+        </Field>
+
+        <Field label="Is there a specific situation you want support with?">
+          <TextArea id="specific_situation" value={specificSituation} onChange={setSpecificSituation} />
+        </Field>
+
+        <Field label="What pressures or constraints are you navigating?">
+          <TextArea id="pressures_constraints" value={pressuresConstraints} onChange={setPressuresConstraints} />
+        </Field>
+
+        <Field label="How does your current capacity feel?">
+          <Select
+            id="capacity"
+            value={capacity}
+            onChange={setCapacity}
+            options={[
+              { value: "Light", label: "Light" },
+              { value: "Moderate", label: "Moderate" },
+              { value: "Heavy but manageable", label: "Heavy but manageable" },
+              { value: "Overwhelming", label: "Overwhelming" },
+            ]}
+          />
+        </Field>
+
+        <Field label="How would you describe your environment? (select all that apply)">
+          <CheckboxGroup
+            id="environment_feel"
+            values={environmentFeel}
+            onChange={setEnvironmentFeel}
+            options={[
+              { value: "High-pressure", label: "High-pressure" },
+              { value: "Supportive", label: "Supportive" },
+              { value: "Unclear expectations", label: "Unclear expectations" },
+              { value: "Fast-moving", label: "Fast-moving" },
+              { value: "Stagnant", label: "Stagnant" },
+            ]}
+          />
+        </Field>
+
+        <Field label="What feels outside of your control right now?">
+          <TextArea id="outside_control" value={outsideControl} onChange={setOutsideControl} />
+        </Field>
+
+        <Field label="What’s driving your decision to seek coaching now?">
+          <TextArea id="decision_reason" value={decisionReason} onChange={setDecisionReason} />
+        </Field>
+
+        <Field label="What’s most important to you to protect or build right now?">
+          <TextArea id="most_important" value={mostImportant} onChange={setMostImportant} />
+        </Field>
+
+        <Field label="What feels unclear, stuck, or hard to name?">
+          <TextArea id="feels_unclear" value={feelsUnclear} onChange={setFeelsUnclear} />
+        </Field>
+
+        <Field label="What advice or approaches have NOT helped in the past?">
+          <TextArea id="unhelpful_advice" value={unhelpfulAdvice} onChange={setUnhelpfulAdvice} />
+        </Field>
+
+        <Field label="In a few months, what do you hope has changed for you—at work or in your life?">
+          <TextArea id="future_feeling" value={futureFeeling} onChange={setFutureFeeling} />
+        </Field>
+
+        <Field label="What’s the cost if nothing changes?">
+          <TextArea id="impact_cost" value={impactCost} onChange={setImpactCost} />
+        </Field>
+
+        <Field label="What would make coaching feel worthwhile to you?">
+          <TextArea id="worthwhile" value={worthwhile} onChange={setWorthwhile} />
+        </Field>
+
+        <Field label="Anything complex you want me to understand about your situation?">
+          <TextArea id="complex_response" value={complexResponse} onChange={setComplexResponse} />
+        </Field>
+
+        <Field label="Anything else you want to share?">
+          <TextArea id="anything_else" value={anythingElse} onChange={setAnythingElse} />
+        </Field>
+
+        <h2 style={{ marginTop: 18 }}>Reflection / Update (optional)</h2>
+        <Field
+          label="Use this only for typos or clarifying notes later (does not overwrite your original answers)."
+          hint="Example: “I meant X not Y” or “Adding a bit more context…”"
+        >
+          <TextArea id="reflection_update" value={reflectionUpdate} onChange={setReflectionUpdate} />
+        </Field>
+
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!!cannotSubmitReason || submitting}
+          style={{
+            width: "100%",
+            padding: "12px 14px",
+            borderRadius: 12,
+            border: "none",
+            fontWeight: 700,
+            fontSize: 15,
+            cursor: !!cannotSubmitReason || submitting ? "not-allowed" : "pointer",
+            opacity: !!cannotSubmitReason || submitting ? 0.6 : 1,
+            background: "black",
+            color: "white",
+          }}
+        >
+          {submitting ? "Submitting…" : "Submit Intake Form"}
+        </button>
       </div>
 
-      {/* Form card */}
-      <div className="rounded-2xl border bg-white p-4 shadow-sm space-y-4">
-        {/* Current work */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="current_work">
-            What’s happening in your work right now?
-          </label>
-          <textarea
-            id="current_work"
-            name="current_work"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.current_work}
-            onChange={(e) => setField("current_work", e.target.value)}
-          />
-        </div>
+      {/* Quick access dropdown for completed forms */}
+      <div style={{ marginTop: 18, padding: 14, borderRadius: 16, border: "1px solid rgba(0,0,0,0.08)" }}>
+        <h2 style={{ marginTop: 0 }}>My completed intake forms</h2>
 
-        {/* Capacity */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="capacity">
-            How does your capacity feel right now?
-          </label>
-          <select
-            id="capacity"
-            name="capacity"
-            className="mt-1 border rounded-xl px-3 py-2 w-full"
-            value={formData.capacity}
-            onChange={(e) => setField("capacity", e.target.value)}
-          >
-            <option value="">Select one…</option>
-            <option value="Light / plenty of room">Light / plenty of room</option>
-            <option value="Moderate">Moderate</option>
-            <option value="Heavy but manageable">Heavy but manageable</option>
-            <option value="Over capacity">Over capacity</option>
-          </select>
-        </div>
-
-        {/* Decision reason */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="decision_reason">
-            What made you decide now is the time to start coaching?
-          </label>
-          <textarea
-            id="decision_reason"
-            name="decision_reason"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.decision_reason}
-            onChange={(e) => setField("decision_reason", e.target.value)}
-          />
-        </div>
-
-        {/* Environment feel (multi-select) */}
-        <div>
-          <div className="text-sm font-medium">How does your environment feel?</div>
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-            {ENVIRONMENT_FEEL_OPTIONS.map((opt) => {
-              const checked = (formData.environment_feel || []).includes(opt);
-              return (
-                <label
-                  key={opt}
-                  className="flex items-center gap-2 border rounded-xl px-3 py-2 cursor-pointer hover:bg-gray-50"
-                >
-                  <input
-                    type="checkbox"
-                    name="environment_feel"
-                    checked={checked}
-                    onChange={() => toggleMulti("environment_feel", opt)}
-                  />
-                  <span className="text-sm">{opt}</span>
-                </label>
-              );
-            })}
+        {!client?.id ? (
+          <div style={{ opacity: 0.8 }}>
+            Once your account is linked to a client record, your completed intake forms will appear here.
           </div>
-        </div>
+        ) : (
+          <>
+            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+              <div style={{ minWidth: 260, flex: "1 1 260px" }}>
+                <Select
+                  id="intake_selector"
+                  value={selectedIntakeId}
+                  onChange={setSelectedIntakeId}
+                  options={[
+                    ...(myIntakes.length
+                      ? myIntakes.map((x) => ({
+                          value: x.id,
+                          label: `${(x.intake_type || "intake").replaceAll("_", " ")} — ${
+                            x.submitted_at ? new Date(x.submitted_at).toLocaleDateString() : "date"
+                          }`,
+                        }))
+                      : [{ value: "", label: "No completed intakes yet" }]),
+                  ]}
+                />
+              </div>
 
-        {/* Feels unclear */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="feels_unclear">
-            What feels unclear or stuck right now?
-          </label>
-          <textarea
-            id="feels_unclear"
-            name="feels_unclear"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.feels_unclear}
-            onChange={(e) => setField("feels_unclear", e.target.value)}
-          />
-        </div>
-
-        {/* Future feeling */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="future_feeling">
-            In a few months, what do you hope has changed for you—at work or in your life?
-          </label>
-          <textarea
-            id="future_feeling"
-            name="future_feeling"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.future_feeling}
-            onChange={(e) => setField("future_feeling", e.target.value)}
-          />
-        </div>
-
-        {/* Pressures */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="pressures_constraints">
-            What pressures or constraints are shaping your situation?
-          </label>
-          <textarea
-            id="pressures_constraints"
-            name="pressures_constraints"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.pressures_constraints}
-            onChange={(e) => setField("pressures_constraints", e.target.value)}
-          />
-        </div>
-
-        {/* Outside control */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="outside_control">
-            What’s outside your control that you’re still carrying?
-          </label>
-          <textarea
-            id="outside_control"
-            name="outside_control"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.outside_control}
-            onChange={(e) => setField("outside_control", e.target.value)}
-          />
-        </div>
-
-        {/* Most important */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="most_important">
-            What’s most important to protect or prioritize right now?
-          </label>
-          <textarea
-            id="most_important"
-            name="most_important"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.most_important}
-            onChange={(e) => setField("most_important", e.target.value)}
-          />
-        </div>
-
-        {/* Specific situation */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="specific_situation">
-            Is there a specific situation you want to work through first?
-          </label>
-          <textarea
-            id="specific_situation"
-            name="specific_situation"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.specific_situation}
-            onChange={(e) => setField("specific_situation", e.target.value)}
-          />
-        </div>
-
-        {/* Unhelpful advice */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="unhelpful_advice">
-            What advice have you received that wasn’t helpful?
-          </label>
-          <textarea
-            id="unhelpful_advice"
-            name="unhelpful_advice"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.unhelpful_advice}
-            onChange={(e) => setField("unhelpful_advice", e.target.value)}
-          />
-        </div>
-
-        {/* Complex response */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="complex_response">
-            If your situation is complex, what nuance do you want me to understand?
-          </label>
-          <textarea
-            id="complex_response"
-            name="complex_response"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.complex_response}
-            onChange={(e) => setField("complex_response", e.target.value)}
-          />
-        </div>
-
-        {/* Worthwhile */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="worthwhile">
-            What would make coaching feel worthwhile to you?
-          </label>
-          <textarea
-            id="worthwhile"
-            name="worthwhile"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.worthwhile}
-            onChange={(e) => setField("worthwhile", e.target.value)}
-          />
-        </div>
-
-        {/* Impact / cost */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="impact_cost">
-            What is this costing you (time, energy, confidence, relationships, etc.)?
-          </label>
-          <textarea
-            id="impact_cost"
-            name="impact_cost"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.impact_cost}
-            onChange={(e) => setField("impact_cost", e.target.value)}
-          />
-        </div>
-
-        {/* Previous coaching */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="previous_coaching">
-            Have you worked with a coach before?
-          </label>
-          <select
-            id="previous_coaching"
-            name="previous_coaching"
-            className="mt-1 border rounded-xl px-3 py-2 w-full"
-            value={formData.previous_coaching}
-            onChange={(e) => setField("previous_coaching", e.target.value)}
-          >
-            <option value="No">No</option>
-            <option value="Yes">Yes</option>
-          </select>
-
-          {formData.previous_coaching === "Yes" && (
-            <div className="mt-2">
-              <label className="text-sm font-medium" htmlFor="previous_coaching_details">
-                If yes, what worked / didn’t work?
-              </label>
-              <textarea
-                id="previous_coaching_details"
-                name="previous_coaching_details"
-                className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[80px]"
-                value={formData.previous_coaching_details}
-                onChange={(e) => setField("previous_coaching_details", e.target.value)}
-              />
+              <button
+                type="button"
+                onClick={loadMyIntakes}
+                style={{
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(0,0,0,0.15)",
+                  background: "white",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                }}
+              >
+                Refresh
+              </button>
             </div>
-          )}
-        </div>
 
-        {/* Anything else */}
-        <div>
-          <label className="text-sm font-medium" htmlFor="anything_else">
-            Anything else you want me to know?
-          </label>
-          <textarea
-            id="anything_else"
-            name="anything_else"
-            className="mt-1 border rounded-xl px-3 py-2 w-full min-h-[90px]"
-            value={formData.anything_else}
-            onChange={(e) => setField("anything_else", e.target.value)}
-          />
-        </div>
-
-        {/* Alerts */}
-        {submitError && (
-          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
-            {submitError}
-          </div>
+            {selectedIntake ? (
+              <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "rgba(0,0,0,0.04)" }}>
+                <div style={{ fontWeight: 800, marginBottom: 6 }}>Preview</div>
+                <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 10 }}>
+                  This is read-only. If you need to add a clarifying note, use “Reflection / Update” above.
+                </div>
+                <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 13 }}>
+                  {JSON.stringify(selectedIntake.responses || {}, null, 2)}
+                </pre>
+                {selectedIntake.reflection_update ? (
+                  <>
+                    <div style={{ fontWeight: 800, marginTop: 12, marginBottom: 6 }}>Reflection / Update</div>
+                    <div style={{ whiteSpace: "pre-wrap" }}>{selectedIntake.reflection_update}</div>
+                  </>
+                ) : null}
+              </div>
+            ) : null}
+          </>
         )}
-        {submitSuccess && (
-          <div className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">
-            Intake submitted successfully.
-          </div>
-        )}
-
-        {/* Submit button (mobile-safe) */}
-        <div className="pt-2 flex flex-col sm:flex-row gap-2 sm:justify-end">
-          <button
-            type="button"
-            className="px-4 py-3 rounded-2xl border bg-white hover:bg-gray-100"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-
-          <button
-            type="button"
-            className="px-4 py-3 rounded-2xl border bg-black text-white hover:opacity-90 disabled:opacity-60"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? "Submitting…" : "Submit Intake Form"}
-          </button>
-        </div>
-
-        <div className="text-xs text-gray-500">
-          Debug tip: if a submission fails for a specific user (like Liz), check console logs for
-          “Clients found: 0” and confirm that user has a matching Client record by email.
-        </div>
       </div>
     </div>
   );
