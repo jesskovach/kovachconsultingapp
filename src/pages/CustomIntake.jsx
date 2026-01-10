@@ -330,6 +330,41 @@ export default function CustomIntake() {
     })();
   }, []);
 
+  useEffect(() => {
+    if (client?.id) {
+      (async () => {
+        try {
+          const list = await listEntities(
+            "Questionnaire",
+            { client_id: client.id },
+            { submitted_at: -1 },
+            50
+          );
+          setMyIntakes(list);
+          if (!selectedIntakeId && list[0]?.id) setSelectedIntakeId(list[0].id);
+        } catch (_) {
+          // non-fatal
+        }
+      })();
+    }
+  }, [client?.id, selectedIntakeId]);
+
+  async function loadMyIntakes() {
+    if (!client?.id) return;
+    try {
+      const list = await listEntities(
+        "Questionnaire",
+        { client_id: client.id },
+        { submitted_at: -1 },
+        50
+      );
+      setMyIntakes(list);
+      if (!selectedIntakeId && list[0]?.id) setSelectedIntakeId(list[0].id);
+    } catch (_) {
+      // non-fatal
+    }
+  }
+
   async function handleSubmit() {
     if (submitting) return;
     setSubmitting(true);
