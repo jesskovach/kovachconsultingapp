@@ -1,150 +1,8 @@
-// pages/CustomIntake.jsx
-// Drop-in replacement for your Custom Intake page.
-// What it does:
-// 1) Uses the logged-in user's email (required) as the identity.
-// 2) Looks up a Client record by that email.
-//    - If none exists, it blocks submission with: “This login email doesn’t match our records.”
-// 3) Saves the intake as a Questionnaire record (client_id + client_email + intake_type + submitted_at + responses).
-// 4) Upserts a UserAuthProfile record (user_email + last_login_provider + last_login_at + optional UA/device).
-// 5) Shows a reminder banner: “You last signed in with X (email). Please use the same method next time…”
-//
-// Paste this whole file into Base44 → Code → pages → CustomIntake (or wherever your CustomIntake page lives).
-
 import React, { useEffect, useMemo, useState } from "react";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 
-// ✅ IMPORTANT: set this to your app id (already in your logs)
-const APP_ID = "6957e3518343d5240794ce38";
-
-// --- tiny helpers ---
-async function safeUserMe() {
-  // Base44 often exposes User.me() in the app runtime.
-  // If it's unavailable, we fall back to decoding the JWT `sub` from localStorage (best-effort).
-  try {
-    // eslint-disable-next-line no-undef
-    if (typeof User !== "undefined" && User?.me) {
-      // eslint-disable-next-line no-undef
-      return await User.me();
-    }
-  } catch (_) {}
-
-  // Fallback: try to read token from storage and decode `sub`
-  // (If this fails, we simply return null and the UI will instruct the user.)
-  try {
-    const token =
-      localStorage.getItem("base44_token") ||
-      localStorage.getItem("token") ||
-      sessionStorage.getItem("base44_token") ||
-      sessionStorage.getItem("token");
-
-    if (!token) return null;
-
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-
-    const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/")));
-    const email = json?.sub || json?.email;
-    if (!email) return null;
-
-    return { email };
-  } catch (_) {
-    return null;
-  }
-}
-
-function guessLoginProvider() {
-  // We can't reliably know provider from the browser in Base44 without a platform hint.
-  // If you later add a server-side hook, you can overwrite this.
-  return "unknown"; // enum: password, google, microsoft, facebook, unknown
-}
-
-function nowIso() {
-  return new Date().toISOString();
-}
-
-async function apiFetch(path, options = {}) {
-  // Always include credentials so session auth works cross-browser.
-  const res = await fetch(path, {
-    credentials: "include",
-    ...options,
-    headers: {
-      Accept: "application/json",
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
-  });
-
-  // Base44 returns JSON for most entity endpoints.
-  const text = await res.text();
-  let data = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch (_) {
-    data = text;
-  }
-
-  if (!res.ok) {
-    const message =
-      (data && (data.error || data.message)) ||
-      (typeof data === "string" ? data : null) ||
-      `Request failed (${res.status})`;
-    const err = new Error(message);
-    err.status = res.status;
-    err.data = data;
-    throw err;
-  }
-
-  return data;
-}
-
-async function findOneEntity(entityName, queryObj) {
-  // Base44 entity read w/ query string `q=<json>`
-  const q = encodeURIComponent(JSON.stringify(queryObj));
-  const url = `/api/apps/${APP_ID}/entities/${entityName}?q=${q}`;
-  const data = await apiFetch(url, { method: "GET" });
-
-  // Base44 sometimes returns { data: [...] } or just [...]
-  const list = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
-  return list[0] || null;
-}
-
-async function listEntities(entityName, queryObj, sortObj, limit = 50) {
-  const params = new URLSearchParams();
-  if (queryObj) params.set("q", JSON.stringify(queryObj));
-  if (sortObj) params.set("sort", JSON.stringify(sortObj));
-  if (limit) params.set("limit", String(limit));
-
-  const url = `/api/apps/${APP_ID}/entities/${entityName}?${params.toString()}`;
-  const data = await apiFetch(url, { method: "GET" });
-  return Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
-}
-
-async function createEntity(entityName, payload) {
-  const url = `/api/apps/${APP_ID}/entities/${entityName}`;
-  return apiFetch(url, { method: "POST", body: JSON.stringify(payload) });
-}
-
-async function updateEntity(entityName, id, payload) {
-  const url = `/api/apps/${APP_ID}/entities/${entityName}/${id}`;
-  return apiFetch(url, { method: "PUT", body: JSON.stringify(payload) });
-}
-
-async function upsertUserAuthProfile(userEmail) {
-  const provider = guessLoginProvider();
-  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
-
-  const existing = await findOneEntity("UserAuthProfile", { user_email: userEmail });
-  const payload = {
-    user_email: userEmail,
-    last_login_provider: provider, // password/google/microsoft/facebook/unknown
-    last_login_at: nowIso(),
-    last_login_user_agent: ua,
-  };
-
-  if (existing?.id) {
-    return updateEntity("UserAuthProfile", existing.id, payload);
-  }
-  return createEntity("UserAuthProfile", payload);
-}
+const FUNCTION_NAME = "submitCustomIntake";
 
 function Field({ label, children, hint }) {
   return (
@@ -155,26 +13,6 @@ function Field({ label, children, hint }) {
         <div style={{ marginTop: 6, fontSize: 12, opacity: 0.75 }}>{hint}</div>
       ) : null}
     </div>
-  );
-}
-
-function TextInput({ id, value, onChange, placeholder }) {
-  return (
-    <input
-      id={id}
-      name={id}
-      value={value}
-      placeholder={placeholder}
-      onChange={(e) => onChange(e.target.value)}
-      autoComplete="off"
-      style={{
-        width: "100%",
-        padding: "10px 12px",
-        borderRadius: 10,
-        border: "1px solid rgba(0,0,0,0.15)",
-        fontSize: 14,
-      }}
-    />
   );
 }
 
@@ -253,17 +91,9 @@ function CheckboxGroup({ id, values, onChange, options }) {
 
 export default function CustomIntake() {
   const [loading, setLoading] = useState(true);
-  const [userEmail, setUserEmail] = useState("");
-  const [client, setClient] = useState(null);
-  const [authProfile, setAuthProfile] = useState(null);
-
-  // intake “milestone” selector (initial / 30-60-90 / annual reset)
   const [intakeType, setIntakeType] = useState("initial");
-
-  // form fields (match what you were logging)
   const [previousCoaching, setPreviousCoaching] = useState("No");
   const [previousCoachingDetails, setPreviousCoachingDetails] = useState("");
-
   const [currentWork, setCurrentWork] = useState("");
   const [specificSituation, setSpecificSituation] = useState("");
   const [pressuresConstraints, setPressuresConstraints] = useState("");
@@ -279,91 +109,53 @@ export default function CustomIntake() {
   const [worthwhile, setWorthwhile] = useState("");
   const [complexResponse, setComplexResponse] = useState("");
   const [anythingElse, setAnythingElse] = useState("");
-  const [reflectionUpdate, setReflectionUpdate] = useState(""); // “Reflection / Update” field (does not overwrite originals)
-
+  const [reflectionUpdate, setReflectionUpdate] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
+  // User query must be at top level
+  const { data: user } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me()
+  });
+
+  // Client query must be at top level
+  const { data: client } = useQuery({
+    queryKey: ["client", user?.email],
+    queryFn: async () => {
+      if (!user?.email) return null;
+      const clients = await base44.entities.Client.filter({ email: user.email });
+      return clients[0] || null;
+    },
+    enabled: !!user?.email
+  });
+
+  // Questionnaires query must be at top level
+  const { data: myIntakes = [] } = useQuery({
+    queryKey: ["myIntakes", client?.id],
+    queryFn: async () => {
+      if (!client?.id) return [];
+      return await base44.entities.Questionnaire.filter({ client_id: client.id }, "-created_date", 50);
+    },
+    enabled: !!client?.id
+  });
+
+  // All useMemo at top level
   const cannotSubmitReason = useMemo(() => {
-    if (!userEmail) return "We couldn’t detect your login email. Please log out and log back in.";
-    if (!client?.id) return "This login email doesn’t match our records.";
+    if (!user?.email) return "We couldn't detect your login email. Please log out and log back in.";
+    if (!client?.id) return "This login email doesn't match our records.";
     return "";
-  }, [userEmail, client]);
+  }, [user?.email, client?.id]);
 
+  // All useEffect at top level
   useEffect(() => {
-    (async () => {
-      setLoading(true);
-      setError("");
-      setSuccess("");
-
-      try {
-        const me = await safeUserMe();
-        const email = me?.email || "";
-        setUserEmail(email);
-
-        if (!email) {
-          setLoading(false);
-          return;
-        }
-
-        // Upsert auth profile (reminder banner uses this)
-        try {
-          await upsertUserAuthProfile(email);
-        } catch (_) {
-          // non-fatal
-        }
-
-        // Fetch latest auth profile
-        const profile = await findOneEntity("UserAuthProfile", { user_email: email });
-        setAuthProfile(profile);
-
-        // Find client by email
-        const foundClient = await findOneEntity("Client", { email });
-        setClient(foundClient || null);
-
-        setLoading(false);
-      } catch (e) {
-        setLoading(false);
-        setError(e?.message || "Unable to load intake.");
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (client?.id) {
-      (async () => {
-        try {
-          const list = await listEntities(
-            "Questionnaire",
-            { client_id: client.id },
-            { submitted_at: -1 },
-            50
-          );
-          setMyIntakes(list);
-          if (!selectedIntakeId && list[0]?.id) setSelectedIntakeId(list[0].id);
-        } catch (_) {
-          // non-fatal
-        }
-      })();
+    if (!user && !client) {
+      setLoading(false);
+    } else if (user && client !== undefined) {
+      setLoading(false);
     }
-  }, [client?.id, selectedIntakeId]);
-
-  async function loadMyIntakes() {
-    if (!client?.id) return;
-    try {
-      const list = await listEntities(
-        "Questionnaire",
-        { client_id: client.id },
-        { submitted_at: -1 },
-        50
-      );
-      setMyIntakes(list);
-      if (!selectedIntakeId && list[0]?.id) setSelectedIntakeId(list[0].id);
-    } catch (_) {
-      // non-fatal
-    }
-  }
+  }, [user, client]);
 
   async function handleSubmit() {
     if (submitting) return;
@@ -376,7 +168,6 @@ export default function CustomIntake() {
         throw new Error(cannotSubmitReason);
       }
 
-      // Build responses object (this is what you want to preserve as original answers)
       const responses = {
         previous_coaching: previousCoaching,
         previous_coaching_details: previousCoaching === "Yes" ? previousCoachingDetails : "",
@@ -397,30 +188,18 @@ export default function CustomIntake() {
         anything_else: anythingElse,
       };
 
-      // Create Questionnaire record
-      const created = await createEntity("Questionnaire", {
-        client_id: client.id,
-        client_email: userEmail,
-        intake_type: intakeType, // initial | checkin_30_60_90 | annual_reset
-        submitted_at: nowIso(),
-        responses,
-        reflection_update: reflectionUpdate || "", // safe “typos/clarifying notes” channel
-        created_by_email: userEmail,
+      const result = await base44.functions.invoke(FUNCTION_NAME, {
+        formData: responses,
+        clientId: client.id,
+        intakeStage: intakeType
       });
 
-      // Refresh auth profile “last login” (optional)
-      try {
-        await upsertUserAuthProfile(userEmail);
-        const profile = await findOneEntity("UserAuthProfile", { user_email: userEmail });
-        setAuthProfile(profile);
-      } catch (_) {}
-
-      setSuccess("Submitted! Your intake form has been saved.");
+      if (result.data?.success) {
+        setSuccess("Submitted! Your intake form has been saved.");
+      } else {
+        throw new Error(result.data?.error || "Submission failed");
+      }
       setSubmitting(false);
-
-      // Optional: you can redirect back to portal home if you want:
-      // window.location.href = "/ClientPortal";
-      console.log("Intake saved:", created);
     } catch (e) {
       setSubmitting(false);
       setError(e?.message || "Submission failed.");
@@ -428,58 +207,9 @@ export default function CustomIntake() {
     }
   }
 
-  // “Quick access to completed forms” (client-side dropdown)
-  // This shows THEIR own questionnaires in the intake page immediately after submission, too.
-  const [myIntakes, setMyIntakes] = useState([]);
-  const [selectedIntakeId, setSelectedIntakeId] = useState("");
-
-  async function loadMyIntakes() {
-    if (!client?.id) return;
-    try {
-      const list = await listEntities(
-        "Questionnaire",
-        { client_id: client.id },
-        { submitted_at: -1 },
-        50
-      );
-      setMyIntakes(list);
-      if (!selectedIntakeId && list[0]?.id) setSelectedIntakeId(list[0].id);
-    } catch (_) {
-      // non-fatal
-    }
-  }
-
-  useEffect(() => {
-    if (client?.id) loadMyIntakes();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client?.id]);
-
-  const selectedIntake = useMemo(() => {
-    return myIntakes.find((x) => x.id === selectedIntakeId) || null;
-  }, [myIntakes, selectedIntakeId]);
-
   return (
     <div style={{ maxWidth: 860, margin: "0 auto", padding: 18 }}>
       <h1 style={{ margin: "8px 0 6px" }}>Client Intake</h1>
-
-      {authProfile?.last_login_provider ? (
-        <div
-          style={{
-            padding: 12,
-            borderRadius: 12,
-            background: "rgba(0,0,0,0.04)",
-            marginBottom: 14,
-            lineHeight: 1.4,
-          }}
-        >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>Sign-in reminder</div>
-          <div>
-            You last signed in with{" "}
-            <b>{String(authProfile.last_login_provider).toUpperCase()}</b> ({userEmail || "—"}).
-            Please use the same method next time to access your forms.
-          </div>
-        </div>
-      ) : null}
 
       {loading ? <div>Loading…</div> : null}
       {error ? (
@@ -540,7 +270,7 @@ export default function CustomIntake() {
           </Field>
         ) : null}
 
-        <Field label="What’s going on in your work right now?">
+        <Field label="What's going on in your work right now?">
           <TextArea id="current_work" value={currentWork} onChange={setCurrentWork} />
         </Field>
 
@@ -585,11 +315,11 @@ export default function CustomIntake() {
           <TextArea id="outside_control" value={outsideControl} onChange={setOutsideControl} />
         </Field>
 
-        <Field label="What’s driving your decision to seek coaching now?">
+        <Field label="What's driving your decision to seek coaching now?">
           <TextArea id="decision_reason" value={decisionReason} onChange={setDecisionReason} />
         </Field>
 
-        <Field label="What’s most important to you to protect or build right now?">
+        <Field label="What's most important to you to protect or build right now?">
           <TextArea id="most_important" value={mostImportant} onChange={setMostImportant} />
         </Field>
 
@@ -605,7 +335,7 @@ export default function CustomIntake() {
           <TextArea id="future_feeling" value={futureFeeling} onChange={setFutureFeeling} />
         </Field>
 
-        <Field label="What’s the cost if nothing changes?">
+        <Field label="What's the cost if nothing changes?">
           <TextArea id="impact_cost" value={impactCost} onChange={setImpactCost} />
         </Field>
 
@@ -624,7 +354,7 @@ export default function CustomIntake() {
         <h2 style={{ marginTop: 18 }}>Reflection / Update (optional)</h2>
         <Field
           label="Use this only for typos or clarifying notes later (does not overwrite your original answers)."
-          hint="Example: “I meant X not Y” or “Adding a bit more context…”"
+          hint="Example: "I meant X not Y" or "Adding a bit more context…""
         >
           <TextArea id="reflection_update" value={reflectionUpdate} onChange={setReflectionUpdate} />
         </Field>
@@ -650,71 +380,21 @@ export default function CustomIntake() {
         </button>
       </div>
 
-      {/* Quick access dropdown for completed forms */}
-      <div style={{ marginTop: 18, padding: 14, borderRadius: 16, border: "1px solid rgba(0,0,0,0.08)" }}>
-        <h2 style={{ marginTop: 0 }}>My completed intake forms</h2>
-
-        {!client?.id ? (
-          <div style={{ opacity: 0.8 }}>
-            Once your account is linked to a client record, your completed intake forms will appear here.
-          </div>
-        ) : (
-          <>
-            <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-              <div style={{ minWidth: 260, flex: "1 1 260px" }}>
-                <Select
-                  id="intake_selector"
-                  value={selectedIntakeId}
-                  onChange={setSelectedIntakeId}
-                  options={[
-                    ...(myIntakes.length
-                      ? myIntakes.map((x) => ({
-                          value: x.id,
-                          label: `${(x.intake_type || "intake").replaceAll("_", " ")} — ${
-                            x.submitted_at ? new Date(x.submitted_at).toLocaleDateString() : "date"
-                          }`,
-                        }))
-                      : [{ value: "", label: "No completed intakes yet" }]),
-                  ]}
-                />
-              </div>
-
-              <button
-                type="button"
-                onClick={loadMyIntakes}
-                style={{
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                  border: "1px solid rgba(0,0,0,0.15)",
-                  background: "white",
-                  cursor: "pointer",
-                  fontWeight: 600,
-                }}
-              >
-                Refresh
-              </button>
-            </div>
-
-            {selectedIntake ? (
-              <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "rgba(0,0,0,0.04)" }}>
-                <div style={{ fontWeight: 800, marginBottom: 6 }}>Preview</div>
-                <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 10 }}>
-                  This is read-only. If you need to add a clarifying note, use “Reflection / Update” above.
+      {/* My completed intake forms */}
+      {client?.id && myIntakes.length > 0 && (
+        <div style={{ marginTop: 18, padding: 14, borderRadius: 16, border: "1px solid rgba(0,0,0,0.08)" }}>
+          <h2 style={{ marginTop: 0 }}>My completed intake forms</h2>
+          <div className="space-y-3">
+            {myIntakes.map((intake) => (
+              <div key={intake.id} className="p-3 border rounded-lg">
+                <div className="text-sm font-medium">
+                  {intake.intake_type || "Initial"} - {intake.created_date ? new Date(intake.created_date).toLocaleDateString() : ""}
                 </div>
-                <pre style={{ whiteSpace: "pre-wrap", margin: 0, fontSize: 13 }}>
-                  {JSON.stringify(selectedIntake.responses || {}, null, 2)}
-                </pre>
-                {selectedIntake.reflection_update ? (
-                  <>
-                    <div style={{ fontWeight: 800, marginTop: 12, marginBottom: 6 }}>Reflection / Update</div>
-                    <div style={{ whiteSpace: "pre-wrap" }}>{selectedIntake.reflection_update}</div>
-                  </>
-                ) : null}
               </div>
-            ) : null}
-          </>
-        )}
-      </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
