@@ -148,7 +148,8 @@ export default function CustomIntake() {
               <br />
               • Schedule your first coaching session
               <br />
-              • We'll contact you within 24 hours
+              • After you submit your intake, it will be reviewed personally to understand your goals, context, and priorities.
+You can expect follow-up typically within 48 hours with a brief recap and next steps. Scheduling is handled intentionally and confirmed based on availability to ensure our time together is focused, prepared, and aligned with your needs.
             </p>
           </div>
           <Button
