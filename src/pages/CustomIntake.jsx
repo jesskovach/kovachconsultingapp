@@ -354,7 +354,7 @@ export default function CustomIntake() {
         <h2 style={{ marginTop: 18 }}>Reflection / Update (optional)</h2>
         <Field
           label="Use this only for typos or clarifying notes later (does not overwrite your original answers)."
-          hint="Example: "I meant X not Y" or "Adding a bit more context…""
+          hint='Example: "I meant X not Y" or "Adding a bit more context…"'
         >
           <TextArea id="reflection_update" value={reflectionUpdate} onChange={setReflectionUpdate} />
         </Field>
