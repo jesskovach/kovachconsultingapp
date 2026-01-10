@@ -1,97 +1,65 @@
-import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
+import { createClientFromRequest } from "npm:@base44/sdk@0.8.6";
 
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
-
-    // 1. Authenticate user
     const user = await base44.auth.me();
+
     if (!user) {
-      return Response.json(
-        { success: false, error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // 2. Parse request body
     const body = await req.json();
-    const { formData, clientId } = body;
+    const { formData, intakeStage } = body ?? {};
 
-    if (!clientId || !formData) {
-      return Response.json(
-        { success: false, error: 'Missing clientId or formData' },
-        { status: 400 }
-      );
+    if (!formData || typeof formData !== "object") {
+      return Response.json({ error: "formData is required" }, { status: 400 });
     }
 
-    // 3. Save questionnaire
-    await base44.asServiceRole.entities.Questionnaire.create({
-      client_id: clientId,
-      type: 'custom_intake',
-      status: 'completed',
-      completed_date: new Date().toISOString(),
-      responses: formData
+    const stage =
+      intakeStage && typeof intakeStage === "string"
+        ? intakeStage
+        : "initial";
+
+    // 1) Find client record by logged-in user's email (client portal identity)
+    const clients = await base44.entities.Client.filter({ email: user.email });
+
+    // 2) Auto-create if missing (fixes Liz scenario)
+    let client = clients?.[0];
+    if (!client) {
+      const created = await base44.entities.Client.create({
+        name: user.name ?? user.email,
+        email: user.email,
+        status: "active",
+        start_date: new Date().toISOString(),
+      });
+      client = created;
+    }
+
+    // 3) Create a NEW Questionnaire record every time (no overwriting)
+    const questionnaire = await base44.entities.Questionnaire.create({
+      client_id: client.id,
+      client_name: client.name ?? user.name ?? user.email,
+      type: "CustomIntake",
+      status: "completed",
+      submitted_date: new Date().toISOString(),
+
+      // NEW expectation fields:
+      intake_stage: stage, // initial | checkin_30 | checkin_60 | checkin_90 | annual_reset
+      responses: formData,
+
+      // NEW: store reflections as an array (starts empty)
+      reflection_updates: [],
     });
 
-    // 4. Fetch client (single record)
-    const clients = await base44.asServiceRole.entities.Client.filter({
-      id: clientId
-    });
-
-    const client = clients?.[0];
-    const coachEmail =
-      client?.created_by || user.email;
-
-    const clientName =
-      client?.name || user.full_name || 'Client';
-
-    // 5. Fire notifications + email (NON-BLOCKING)
-    Promise.all([
-      // In-app notification
-      base44.asServiceRole.entities.Notification.create({
-        type: 'intake_submitted',
-        recipient_email: coachEmail,
-        recipient_name: 'Coach',
-        client_id: clientId,
-        subject: 'New Intake Form Submitted',
-        message: `${clientName} has submitted their intake questionnaire.`,
-        status: 'sent',
-        sent_date: new Date().toISOString()
-      }),
-
-      // Email notification
-      base44.asServiceRole.integrations.Core.SendEmail({
-        to: coachEmail,
-        subject: 'New Intake Questionnaire Submitted',
-        body: `
-Hello,
-
-${clientName} has completed their intake questionnaire.
-
-You can review their responses in the CoachCRM dashboard under:
-Clients → Intake Forms
-
-— CoachCRM
-        `.trim()
-      })
-    ]).catch((err) => {
-      console.error('Async notification error:', err);
-    });
-
-    // 6. Return SUCCESS (frontend relies on this)
     return Response.json({
       success: true,
-      message: 'Intake submitted successfully',
-      clientId
+      questionnaireId: questionnaire.id,
+      clientId: client.id,
     });
-
   } catch (error) {
-    console.error('submitCustomIntake error:', error);
     return Response.json(
-      {
-        success: false,
-        error: error?.message || 'Internal server error'
-      },
+      { success: false, error: error?.message ?? String(error) },
       { status: 500 }
     );
   }
