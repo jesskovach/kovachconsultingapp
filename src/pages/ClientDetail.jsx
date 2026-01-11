@@ -278,46 +278,16 @@ export default function ClientDetail() {
 
   const unreadClientMessagesCount = messages.filter((m) => !m.read && m.sender_email !== currentUser?.email).length;
 
-  const sections = useMemo(() => {
-    return [
-      { id: "sessions", label: `Sessions (${sessions.length})` },
-      { id: "goals", label: `Goals (${goals.length})` },
-      { id: "messages", label: `Messages (${unreadClientMessagesCount})` },
-      { id: "emails", label: "Emails" },
-      { id: "payments", label: "Payments" },
-      { id: "resources", label: `Resources (${assignedResources.length})` },
-      { id: "intake", label: `Intake Forms (${questionnaires.length})` },
-      { id: "notes", label: "Notes" },
-    ];
-  }, [sessions.length, goals.length, unreadClientMessagesCount, assignedResources.length, questionnaires.length]);
-
-  const handleJump = (id) => {
-    setOpenSection(id);
-    setTimeout(() => {
-      const el = sectionRefs.current[id];
-      if (el?.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50);
-  };
-
-  // Labels for intake questions (unchanged from your original)
-  const questionLabels = {
-    current_work: "What kind of work are you doing right now?",
-    environment_feel: "How does your current environment feel?",
-    capacity: "How's your capacity at the moment?",
-    decision_reason: "What made you decide to book this conversation now?",
-    specific_situation: "Is there a specific situation, decision, or pattern that's been on your mind?",
-    most_important: "What feels most important about it?",
-    feels_unclear: "What feels unclear, stuck, or hard to name right now?",
-    pressures_constraints: "What pressures or constraints feel most present for you lately?",
-    outside_control: "Are there parts of this situation that feel outside your control?",
-    complex_response: "When things get complex or high-stakes, what do you usually do?",
-    unhelpful_advice: "What kinds of advice or support have not been helpful for you?",
-    impact_cost: "If this situation has been costing you something, what has that looked like?",
-    future_feeling: "In a few months, what do you hope has changed?",
-    worthwhile: "What would make this conversation feel worthwhile to you?",
-    previous_coaching: "Have you worked with a coach or advisor before?",
-    previous_coaching_details: "Tell us about your previous coaching experience",
-    anything_else: "Is there anything else you want me to know?",
+const sections = [
+  { id: "sessions", label: `Sessions (${sessions.length})` },
+  { id: "goals", label: `Goals (${goals.length})` },
+  { id: "messages", label: `Messages (${unreadClientMessagesCount})` },
+  { id: "emails", label: "Emails" },
+  { id: "payments", label: "Payments" },
+  { id: "resources", label: `Resources (${assignedResources.length})` },
+  { id: "intake", label: `Intake Forms (${questionnaires.length})` },
+  { id: "notes", label: "Notes" },
+];
     what_makes_useful: "What would make this coaching conversation useful for you?",
     current_challenges: "What are your biggest leadership challenges right now?",
     desired_outcomes: "What specific outcomes would you like from our coaching relationship?",
