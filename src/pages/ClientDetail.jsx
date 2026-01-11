@@ -288,6 +288,8 @@ const sections = [
   { id: "intake", label: `Intake Forms (${questionnaires.length})` },
   { id: "notes", label: "Notes" },
 ];
+
+  const questionLabels = {
     what_makes_useful: "What would make this coaching conversation useful for you?",
     current_challenges: "What are your biggest leadership challenges right now?",
     desired_outcomes: "What specific outcomes would you like from our coaching relationship?",
@@ -300,6 +302,14 @@ const sections = [
     time_commitment: "What time commitment can you make to coaching and personal development?",
     preferred_communication: "What's your preferred communication style and frequency?",
     additional_info: "Is there anything else you'd like me to know?",
+  };
+
+  const handleJump = (id) => {
+    setOpenSection(id);
+    setTimeout(() => {
+      const el = sectionRefs.current[id];
+      if (el?.scrollIntoView) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
   };
 
   return (
