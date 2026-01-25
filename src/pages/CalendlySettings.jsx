@@ -2,7 +2,7 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Calendar, Save, Loader2 } from "lucide-react";
+import { Calendar, Save, Loader2, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -132,6 +132,37 @@ export default function CalendlySettings() {
               <li>Paste it in the field above</li>
             </ol>
           </div>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-white rounded-xl border border-slate-100 p-6 mt-6"
+        >
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+              <MessageCircle className="w-6 h-6 text-green-600" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold text-slate-800">WhatsApp Support</h2>
+              <p className="text-sm text-slate-500">Connect with our QA testing agent on WhatsApp</p>
+            </div>
+          </div>
+
+          <p className="text-sm text-slate-600 mb-4">
+            Get instant help and support through WhatsApp. Our AI agent can assist with testing workflows and reporting issues.
+          </p>
+
+          <a
+            href={base44.agents.getWhatsAppConnectURL('qa_tester')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+          >
+            <MessageCircle className="w-4 h-4" />
+            Connect WhatsApp
+          </a>
         </motion.div>
       </div>
     </div>
