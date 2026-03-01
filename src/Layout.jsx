@@ -1,7 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { 
-  LayoutDashboard, Users, Calendar, Target, 
+import {
+  LayoutDashboard, Users, Calendar, Target,
   Menu, X, ChevronRight, ClipboardCheck, BarChart3, CreditCard, Bell, BookOpen, FileText, LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -36,7 +36,6 @@ export default function Layout({ children, currentPageName }) {
     queryFn: () => base44.auth.me()
   });
 
-  // Redirect non-admin users to ClientPortal
   useEffect(() => {
     if (!isLoading && user && user.role !== 'admin') {
       const allowedPages = ['ClientPortal', 'ClientIntake', 'CustomIntake'];
@@ -46,7 +45,6 @@ export default function Layout({ children, currentPageName }) {
     }
   }, [user, isLoading, currentPageName, navigate]);
 
-  // Show loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
@@ -55,21 +53,22 @@ export default function Layout({ children, currentPageName }) {
     );
   }
 
-  // For non-admin users, render without the admin sidebar
   if (user && user.role !== 'admin') {
-    return <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">{children}</div>;
+    return <div className="min-h-screen bg-slate-50">{children}</div>;
   }
 
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Mobile Header */}
-      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-100 px-4 py-3">
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-slate-800 to-slate-700 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">EC</span>
+            <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">KC</span>
             </div>
-            <span className="font-semibold text-slate-800">CoachCRM</span>
+            <span className="font-semibold text-slate-900">
+              Kovach Consulting Group
+            </span>
           </div>
           <div className="flex items-center gap-2">
             <NotificationBell />
@@ -84,7 +83,7 @@ export default function Layout({ children, currentPageName }) {
             </Button>
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-slate-100 transition-colors"
+              className="p-2 rounded-md hover:bg-slate-100 transition-colors"
             >
               {sidebarOpen ? (
                 <X className="w-5 h-5 text-slate-600" />
@@ -105,16 +104,16 @@ export default function Layout({ children, currentPageName }) {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm"
+              className="lg:hidden fixed inset-0 z-40 bg-black/20"
             />
             <motion.div
               initial={{ x: -280 }}
               animate={{ x: 0 }}
               exit={{ x: -280 }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="lg:hidden fixed top-14 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-100 p-4"
+              className="lg:hidden fixed top-14 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-200 px-4 py-6"
             >
-              <nav className="space-y-1">
+              <nav className="space-y-2">
                 {navigation.map((item) => {
                   const isActive = currentPageName === item.href;
                   return (
@@ -122,10 +121,10 @@ export default function Layout({ children, currentPageName }) {
                       key={item.name}
                       to={createPageUrl(item.href)}
                       onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
                         isActive
-                          ? "bg-slate-100 text-slate-800"
-                          : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                          ? "bg-slate-100 text-slate-900"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                       }`}
                     >
                       <item.icon className="w-5 h-5" />
@@ -138,7 +137,7 @@ export default function Layout({ children, currentPageName }) {
                     setSidebarOpen(false);
                     base44.auth.logout();
                   }}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-slate-500 hover:text-slate-800 hover:bg-slate-50 w-full"
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 w-full"
                 >
                   <LogOut className="w-5 h-5" />
                   Logout
@@ -151,36 +150,40 @@ export default function Layout({ children, currentPageName }) {
 
       {/* Desktop Sidebar */}
       <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
-        <div className="flex flex-col flex-1 bg-white border-r border-slate-100">
+        <div className="flex flex-col flex-1 bg-white border-r border-slate-200">
           {/* Logo */}
-          <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-slate-800 to-slate-700 flex items-center justify-center shadow-lg shadow-slate-200">
-              <span className="text-white font-bold">EC</span>
+          <div className="flex items-center gap-3 px-6 py-6 border-b border-slate-200">
+            <div className="w-10 h-10 rounded-md bg-slate-900 flex items-center justify-center">
+              <span className="text-white font-semibold">KC</span>
             </div>
             <div>
-              <h1 className="font-bold text-slate-800">CoachCRM</h1>
-              <p className="text-xs text-slate-400">Executive Coaching</p>
+              <h1 className="font-semibold text-slate-900 text-sm">
+                Kovach Consulting Group
+              </h1>
+              <p className="text-xs text-slate-500">
+                Operational Dashboard
+              </p>
             </div>
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1">
+          <nav className="flex-1 px-4 py-6 space-y-2">
             {navigation.map((item) => {
               const isActive = currentPageName === item.href;
               return (
                 <Link
                   key={item.name}
                   to={createPageUrl(item.href)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all group ${
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
                     isActive
-                      ? "bg-slate-800 text-white shadow-lg shadow-slate-200"
-                      : "text-slate-500 hover:text-slate-800 hover:bg-slate-50"
+                      ? "bg-slate-100 text-slate-900"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
                   }`}
                 >
-                  <item.icon className={`w-5 h-5 ${isActive ? "text-white" : ""}`} />
+                  <item.icon className="w-5 h-5" />
                   {item.name}
                   {isActive && (
-                    <ChevronRight className="w-4 h-4 ml-auto" />
+                    <ChevronRight className="w-4 h-4 ml-auto text-slate-500" />
                   )}
                 </Link>
               );
@@ -188,26 +191,22 @@ export default function Layout({ children, currentPageName }) {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-slate-100">
+          <div className="p-4 border-t border-slate-200">
             <Button
               variant="outline"
               onClick={() => base44.auth.logout()}
-              className="w-full mb-4"
+              className="w-full"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Logout
             </Button>
-            <div className="p-4 rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200">
-              <p className="text-xs text-slate-500 mb-2">Pro Tip</p>
-              <p className="text-sm text-slate-600">Track client goals to measure coaching impact over time.</p>
-            </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
       <div className="lg:pl-64">
-        <main className="pt-14 lg:pt-0">
+        <main className="pt-14 lg:pt-0 px-6 py-8">
           {children}
         </main>
       </div>
