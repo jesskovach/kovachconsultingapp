@@ -317,103 +317,89 @@ export default function Reports() {
             <TabsTrigger value="predictive">Predictive Insights</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            {/* Key Metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <MetricCard
-            title="Active Clients"
-            value={activeClients}
-            change={12}
-            trend="up"
-            icon={Users}
-            color="blue"
-          />
-          <MetricCard
-            title="Total Sessions"
-            value={completedSessions}
-            change={8}
-            trend="up"
-            icon={Calendar}
-            color="emerald"
-          />
-          <MetricCard
-            title="Avg Sessions/Client"
-            value={avgSessionsPerClient}
-            change={5}
-            trend="up"
-            icon={TrendingUp}
-            color="violet"
-          />
-          <MetricCard
-            title="Goal Completion"
-            value={`${goalCompletionRate}%`}
-            change={3}
-            trend="up"
-            icon={Target}
-            color="amber"
-          />
+         <TabsContent value="overview">
+  <div className="space-y-12">
+
+    {/* Next Session */}
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-4">
+        Next Session
+      </h3>
+
+      {sessions.filter(s => s.status === "scheduled").length > 0 ? (
+        <PortalSessions
+          sessions={sessions
+            .filter(s => s.status === "scheduled")
+            .slice(0, 1)}
+          onProvideFeedback={setFeedbackSession}
+          clientId={client.id}
+          clientName={client.name}
+        />
+      ) : (
+        <div className="bg-card border border-border rounded-md p-6">
+          <p className="text-sm text-muted-foreground mb-4">
+            No upcoming sessions scheduled.
+          </p>
+
+          {calendlySettings?.enabled && calendlySettings?.calendly_url && (
+            <Button asChild variant="outline">
+              <a
+                href={calendlySettings.calendly_url}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Calendar className="w-4 h-4 mr-2" />
+                Schedule Session
+              </a>
+            </Button>
+          )}
         </div>
+      )}
+    </div>
 
-        {/* Charts Row 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-          <EngagementChart data={monthlyData} />
-          <PipelineChart data={pipelineData} />
+    {/* Current Focus Goal */}
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-4">
+        Current Focus
+      </h3>
+
+      {goals.length > 0 ? (
+        <PortalGoals
+          goals={goals
+            .filter(g => !g.completed)
+            .slice(0, 1)}
+          onAddGoal={() => {
+            setEditingGoal(null);
+            setShowGoalForm(true);
+          }}
+          onEditGoal={(goal) => {
+            setEditingGoal(goal);
+            setShowGoalForm(true);
+          }}
+        />
+      ) : (
+        <div className="bg-card border border-border rounded-md p-6">
+          <p className="text-sm text-muted-foreground mb-4">
+            No active goals yet.
+          </p>
+
+          <Button
+            variant="outline"
+            onClick={() => {
+              setEditingGoal(null);
+              setShowGoalForm(true);
+            }}
+          >
+            <Target className="w-4 h-4 mr-2" />
+            Add Goal
+          </Button>
         </div>
+      )}
+    </div>
 
-        {/* Business Performance Section */}
-        <div className="bg-white rounded-xl border border-slate-100 p-6 mb-6">
-          <h3 className="font-semibold text-slate-800 mb-6">Business Performance</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="text-center p-4 rounded-lg bg-slate-50">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 mb-3">
-                <DollarSign className="w-6 h-6" />
-              </div>
-              <p className="text-2xl font-bold text-slate-800 mb-1">{conversionRate}%</p>
-              <p className="text-sm text-slate-500">Pipeline Conversion</p>
-              <p className="text-xs text-slate-400 mt-1">{wonClients} of {totalProspects} prospects</p>
-            </div>
-            
-            <div className="text-center p-4 rounded-lg bg-slate-50">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-blue-100 text-blue-600 mb-3">
-                <Clock className="w-6 h-6" />
-              </div>
-              <p className="text-2xl font-bold text-slate-800 mb-1">{avgSalesCycle}</p>
-              <p className="text-sm text-slate-500">Avg Sales Cycle (days)</p>
-              <p className="text-xs text-slate-400 mt-1">Lead to won client</p>
-            </div>
-            
-            <div className="text-center p-4 rounded-lg bg-slate-50">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-violet-100 text-violet-600 mb-3">
-                <Target className="w-6 h-6" />
-              </div>
-              <p className="text-2xl font-bold text-slate-800 mb-1">{goals.length}</p>
-              <p className="text-sm text-slate-500">Total Active Goals</p>
-              <p className="text-xs text-slate-400 mt-1">{completedGoals} completed</p>
-            </div>
-          </div>
-        </div>
+  </div>
+</TabsContent>
 
-            {/* Charts Row 2 */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <GoalCompletionChart data={goalData} />
-              <TopClientsTable clients={clientEngagement} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="onboarding" className="space-y-6">
-            <OnboardingAnalytics checklists={onboardingChecklists} />
-          </TabsContent>
-
-          <TabsContent value="advanced" className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <ClientHealthScore clients={clientHealthScores} />
-              <CohortAnalysisChart data={cohortData} cohorts={cohortMonths} />
-            </div>
-          </TabsContent>
-
-          <TabsContent value="predictive" className="space-y-6">
-            <PredictiveInsights insights={predictiveInsights} />
-          </TabsContent>
         </Tabs>
       </div>
     </div>
