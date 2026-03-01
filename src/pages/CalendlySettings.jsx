@@ -1,169 +1,214 @@
-import { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { Calendar, Save, Loader2, MessageCircle } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import {
+  LayoutDashboard, Users, Calendar, Target,
+  Menu, X, ChevronRight, ClipboardCheck, BarChart3, CreditCard, Bell, BookOpen, FileText, LogOut
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { toast } from "sonner";
+import NotificationBell from "@/components/notifications/NotificationBell";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { base44 } from "@/api/base44Client";
+import { useQuery } from "@tanstack/react-query";
 
-export default function CalendlySettings() {
-  const queryClient = useQueryClient();
+const navigation = [
+  { name: "Dashboard", href: "Dashboard", icon: LayoutDashboard },
+  { name: "Clients", href: "Clients", icon: Users },
+  { name: "Sessions", href: "Sessions", icon: Calendar },
+  { name: "History", href: "ClientHistory", icon: FileText },
+  { name: "Onboarding", href: "Onboarding", icon: ClipboardCheck },
+  { name: "Templates", href: "OnboardingTemplates", icon: FileText },
+  { name: "Pipeline", href: "Pipeline", icon: Target },
+  { name: "Resources", href: "Resources", icon: BookOpen },
+  { name: "Team", href: "Team", icon: Users },
+  { name: "Payments", href: "PaymentSettings", icon: CreditCard },
+  { name: "Calendly", href: "CalendlySettings", icon: Calendar },
+  { name: "Reminders", href: "ReminderSettings", icon: Bell },
+  { name: "Reports", href: "Reports", icon: BarChart3 },
+];
 
-  const { data: settings, isLoading } = useQuery({
-    queryKey: ["calendlySettings"],
-    queryFn: async () => {
-      const list = await base44.entities.CalendlySettings.list();
-      return list[0];
-    }
+export default function Layout({ children, currentPageName }) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const navigate = useNavigate();
+
+  const { data: user, isLoading } = useQuery({
+    queryKey: ["currentUser"],
+    queryFn: () => base44.auth.me()
   });
 
-  const [formData, setFormData] = useState({
-    calendly_url: settings?.calendly_url || "",
-    enabled: settings?.enabled ?? true
-  });
-
-  const saveMutation = useMutation({
-    mutationFn: async (data) => {
-      if (settings) {
-        return base44.entities.CalendlySettings.update(settings.id, data);
-      } else {
-        return base44.entities.CalendlySettings.create(data);
+  useEffect(() => {
+    if (!isLoading && user && user.role !== 'admin') {
+      const allowedPages = ['ClientPortal', 'ClientIntake', 'CustomIntake'];
+      if (!allowedPages.includes(currentPageName)) {
+        navigate(createPageUrl('ClientPortal'), { replace: true });
       }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["calendlySettings"] });
-      toast.success("Calendly settings saved");
     }
-  });
-
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    saveMutation.mutate(formData);
-  };
+  }, [user, isLoading, currentPageName, navigate]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold text-slate-800">Calendly Integration</h1>
-          <p className="text-slate-500 mt-1">Let clients book sessions directly through Calendly</p>
-        </motion.div>
+  if (user && user.role !== 'admin') {
+    return <div className="min-h-screen bg-slate-50">{children}</div>;
+  }
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl border border-slate-100 p-6"
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-              <Calendar className="w-6 h-6 text-blue-600" />
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate-200 px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-md bg-slate-900 flex items-center justify-center">
+              <span className="text-white font-semibold text-sm">KC</span>
+            </div>
+            <span className="font-semibold text-slate-900">
+              Kovach Consulting Group
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => base44.auth.logout()}
+              className="hidden sm:flex"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 rounded-md hover:bg-slate-100 transition-colors"
+            >
+              {sidebarOpen ? (
+                <X className="w-5 h-5 text-slate-600" />
+              ) : (
+                <Menu className="w-5 h-5 text-slate-600" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Sidebar */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden fixed inset-0 z-40 bg-black/20"
+            />
+            <motion.div
+              initial={{ x: -280 }}
+              animate={{ x: 0 }}
+              exit={{ x: -280 }}
+              transition={{ type: "spring", damping: 25, stiffness: 300 }}
+              className="lg:hidden fixed top-14 left-0 bottom-0 z-50 w-64 bg-white border-r border-slate-200 px-4 py-6"
+            >
+              <nav className="space-y-2">
+                {navigation.map((item) => {
+                  const isActive = currentPageName === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      to={createPageUrl(item.href)}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                        isActive
+                          ? "bg-slate-100 text-slate-900"
+                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                      }`}
+                    >
+                      <item.icon className="w-5 h-5" />
+                      {item.name}
+                    </Link>
+                  );
+                })}
+                <button
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    base44.auth.logout();
+                  }}
+                  className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 w-full"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Logout
+                </button>
+              </nav>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+        <div className="flex flex-col flex-1 bg-white border-r border-slate-200">
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-6 py-6 border-b border-slate-200">
+            <div className="w-10 h-10 rounded-md bg-slate-900 flex items-center justify-center">
+              <span className="text-white font-semibold">KC</span>
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-slate-800">Calendly Settings</h2>
-              <p className="text-sm text-slate-500">Configure your Calendly booking link</p>
-            </div>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2">
-              <Label htmlFor="calendly_url">Calendly URL</Label>
-              <Input
-                id="calendly_url"
-                type="url"
-                placeholder="https://calendly.com/your-username"
-                value={formData.calendly_url}
-                onChange={(e) => setFormData({ ...formData, calendly_url: e.target.value })}
-              />
-              <p className="text-sm text-slate-500">
-                Your Calendly scheduling page URL. Clients will see this in their portal.
+              <h1 className="font-semibold text-slate-900 text-sm">
+                Kovach Consulting Group
+              </h1>
+              <p className="text-xs text-slate-500">
+                Operational Dashboard
               </p>
             </div>
-
-            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg">
-              <div>
-                <Label htmlFor="enabled" className="font-medium">Enable Calendly Booking</Label>
-                <p className="text-sm text-slate-500 mt-1">
-                  Show the Calendly booking button to clients
-                </p>
-              </div>
-              <Switch
-                id="enabled"
-                checked={formData.enabled}
-                onCheckedChange={(checked) => setFormData({ ...formData, enabled: checked })}
-              />
-            </div>
-
-            <div className="flex justify-end pt-4">
-              <Button
-                type="submit"
-                disabled={saveMutation.isPending}
-                className="bg-slate-800 hover:bg-slate-700"
-              >
-                {saveMutation.isPending ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4 mr-2" />
-                )}
-                Save Settings
-              </Button>
-            </div>
-          </form>
-
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
-            <h3 className="font-medium text-blue-900 mb-2">How to get your Calendly URL:</h3>
-            <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-              <li>Go to <a href="https://calendly.com" target="_blank" rel="noopener noreferrer" className="underline">calendly.com</a> and log in</li>
-              <li>Copy your scheduling page URL (e.g., https://calendly.com/your-username)</li>
-              <li>Paste it in the field above</li>
-            </ol>
-          </div>
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="bg-white rounded-xl border border-slate-100 p-6 mt-6"
-        >
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-              <MessageCircle className="w-6 h-6 text-green-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800">WhatsApp Support</h2>
-              <p className="text-sm text-slate-500">Connect with our QA testing agent on WhatsApp</p>
-            </div>
           </div>
 
-          <p className="text-sm text-slate-600 mb-4">
-            Get instant help and support through WhatsApp. Our AI agent can assist with testing workflows and reporting issues.
-          </p>
+          {/* Navigation */}
+          <nav className="flex-1 px-4 py-6 space-y-2">
+            {navigation.map((item) => {
+              const isActive = currentPageName === item.href;
+              return (
+                <Link
+                  key={item.name}
+                  to={createPageUrl(item.href)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? "bg-slate-100 text-slate-900"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.name}
+                  {isActive && (
+                    <ChevronRight className="w-4 h-4 ml-auto text-slate-500" />
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
 
-          <a
-            href={base44.agents.getWhatsAppConnectURL('qa_tester')}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-          >
-            <MessageCircle className="w-4 h-4" />
-            Connect WhatsApp
-          </a>
-        </motion.div>
+          {/* Footer */}
+          <div className="p-4 border-t border-slate-200">
+            <Button
+              variant="outline"
+              onClick={() => base44.auth.logout()}
+              className="w-full"
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="lg:pl-64">
+        <main className="pt-14 lg:pt-0 px-6 py-8">
+          {children}
+        </main>
       </div>
     </div>
   );
