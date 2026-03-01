@@ -1,529 +1,126 @@
-import { useState } from "react";
-import { base44 } from "@/api/base44Client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { 
-  Target, Calendar, MessageSquare, FileText, 
-  BookOpen, User, LogOut, CreditCard, Sparkles 
-} from "lucide-react";
-import { Tabs, TabsContent } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import PortalGoals from "@/components/portal/PortalGoals";
-import PortalSessions from "@/components/portal/PortalSessions";
-import PortalMessaging from "@/components/portal/PortalMessaging";
-import PortalDocuments from "@/components/portal/PortalDocuments";
-import PortalResources from "@/components/portal/PortalResources";
-import SessionFeedbackForm from "@/components/portal/SessionFeedbackForm";
-import GoalForm from "@/components/goals/GoalForm";
-import PaymentButton from "@/components/payments/PaymentButton";
-
-export default function ClientPortal() {
-  const [feedbackSession, setFeedbackSession] = useState(null);
-  const [showGoalForm, setShowGoalForm] = useState(false);
-  const [editingGoal, setEditingGoal] = useState(null);
-  const [activeTab, setActiveTab] = useState("overview");
-  const queryClient = useQueryClient();
-
-  const { data: user } = useQuery({
-    queryKey: ["currentUser"],
-    queryFn: () => base44.auth.me()
-  });
-
-  const { data: client, isLoading: clientLoading } = useQuery({
-    queryKey: ["clientByEmail", user?.email],
-    queryFn: async () => {
-      const response = await base44.functions.invoke('autoLinkUserToClient');
-      return response.data.client;
-    },
-    enabled: !!user,
-    retry: 1
-  });
-
-  const { data: goals = [] } = useQuery({
-    queryKey: ["portalGoals", client?.id],
-    queryFn: async () => {
-      const response = await base44.functions.invoke("getClientGoals", {
-        clientId: client.id
-      });
-      return response.data.goals || [];
-    },
-    enabled: !!client
-  });
-
-  const { data: sessions = [] } = useQuery({
-    queryKey: ["portalSessions", client?.id],
-    queryFn: () => base44.entities.Session.filter({ client_id: client.id }, "-date"),
-    enabled: !!client
-  });
-
-  const { data: messages = [] } = useQuery({
-    queryKey: ["messages", client?.id],
-    queryFn: () => base44.entities.Message.filter({ client_id: client.id }, "-created_date"),
-    enabled: !!client,
-    refetchInterval: 10000
-  });
-
-  const { data: documents = [] } = useQuery({
-    queryKey: ["documents", client?.id],
-    queryFn: () => base44.entities.Document.filter({ client_id: client.id }, "-created_date"),
-    enabled: !!client
-  });
-
-  const { data: assignedResourceIds = [] } = useQuery({
-    queryKey: ["resource-assignments", client?.id],
-    queryFn: async () => {
-      const assignments = await base44.entities.ResourceAssignment.filter({ client_id: client.id });
-      return assignments.map(a => a.resource_id);
-    },
-    enabled: !!client
-  });
-
-  const { data: resources = [] } = useQuery({
-    queryKey: ["assignedResources", client?.id],
-    queryFn: async () => {
-      if (assignedResourceIds.length === 0) return [];
-      const allResources = await base44.entities.Resource.list();
-      return allResources.filter(r => assignedResourceIds.includes(r.id));
-    },
-    enabled: !!client && assignedResourceIds.length > 0
-  });
-
-  const { data: calendlySettings } = useQuery({
-    queryKey: ["calendlySettings"],
-    queryFn: async () => {
-      const settings = await base44.entities.CalendlySettings.list();
-      return settings[0];
-    }
-  });
-
-  const { data: payments = [] } = useQuery({
-    queryKey: ["clientPayments", client?.id],
-    queryFn: () => base44.entities.Payment.filter({ client_id: client.id }, "-created_date"),
-    enabled: !!client
-  });
-
-  const feedbackMutation = useMutation({
-    mutationFn: (data) => base44.entities.SessionFeedback.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["portalSessions", client?.id] });
-      setFeedbackSession(null);
-    }
-  });
-
-  const createGoalMutation = useMutation({
-    mutationFn: (data) => base44.entities.Goal.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["portalGoals", client?.id] });
-      setShowGoalForm(false);
-      setEditingGoal(null);
-    }
-  });
-
-  const updateGoalMutation = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.Goal.update(id, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["portalGoals", client?.id] });
-      setShowGoalForm(false);
-      setEditingGoal(null);
-    }
-  });
-
-  const handleFeedbackSubmit = (feedbackData) => {
-    feedbackMutation.mutate({
-      ...feedbackData,
-      session_id: feedbackSession.id,
-      client_id: client.id
-    });
-  };
-
-  const handleGoalSubmit = (goalData) => {
-    if (editingGoal) {
-      updateGoalMutation.mutate({ id: editingGoal.id, data: goalData });
-    } else {
-      createGoalMutation.mutate({ ...goalData, client_id: client.id });
-    }
-  };
-
-  if (!user || clientLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-2 border-slate-800 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Loading your portal...</h2>
-        </div>
+<div className="min-h-screen bg-background">
+  {/* Header */}
+  <div className="bg-card border-b border-border">
+    <div className="max-w-5xl mx-auto px-6 py-8 flex items-center justify-between">
+      <div>
+        <h1 className="text-2xl font-semibold text-foreground">
+          {client.name}
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Client Portal
+        </p>
       </div>
-    );
-  }
 
-  if (!client) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
-        <div className="text-center max-w-md mx-auto p-8">
-          <User className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-slate-800 mb-2">Client Portal</h2>
-          <p className="text-slate-600 mb-6">
-            Your account is not yet linked to a client profile. Please contact your coach for access.
+      <Button variant="outline" onClick={() => base44.auth.logout()}>
+        <LogOut className="w-4 h-4 mr-2" />
+        Logout
+      </Button>
+    </div>
+  </div>
+
+  {/* Main */}
+  <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
+
+    {/* Primary Actions */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {calendlySettings?.enabled && calendlySettings?.calendly_url && (
+        <div className="bg-card border border-border rounded-md p-6">
+          <h3 className="text-base font-semibold text-foreground mb-2">
+            Schedule a Session
+          </h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Book your next coaching session.
           </p>
-          <Button onClick={() => base44.auth.logout()}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Logout
+          <Button asChild variant="outline">
+            <a
+              href={calendlySettings.calendly_url}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Calendar className="w-4 h-4 mr-2" />
+              Book Session
+            </a>
           </Button>
         </div>
+      )}
+
+      <div className="bg-card border border-border rounded-md p-6">
+        <h3 className="text-base font-semibold text-foreground mb-2">
+          Intake & Updates
+        </h3>
+        <p className="text-sm text-muted-foreground mb-4">
+          Complete or update your intake questionnaire.
+        </p>
+        <Button asChild variant="outline">
+          <a href={createPageUrl("CustomIntake")}>
+            <FileText className="w-4 h-4 mr-2" />
+            Open Form
+          </a>
+        </Button>
       </div>
-    );
-  }
-
-  const unreadMessages = messages.filter(m => !m.read && m.sender_email !== user.email).length;
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800">Welcome back, {client.name}!</h1>
-              <p className="text-slate-500 mt-1">Your coaching journey</p>
-            </div>
-            <Button variant="outline" onClick={() => base44.auth.logout()}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <Select value={activeTab} onValueChange={setActiveTab}>
-            <SelectTrigger className="w-full bg-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="overview">
-                <div className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  Overview
-                </div>
-              </SelectItem>
-              <SelectItem value="goals">
-                <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4" />
-                  Goals
-                </div>
-              </SelectItem>
-              <SelectItem value="sessions">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" />
-                  Sessions
-                </div>
-              </SelectItem>
-              <SelectItem value="messages">
-                <div className="flex items-center gap-2">
-                  <MessageSquare className="w-4 h-4" />
-                  Messages
-                  {unreadMessages > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 bg-red-600 text-white text-xs rounded-full">
-                      {unreadMessages}
-                    </span>
-                  )}
-                </div>
-              </SelectItem>
-              <SelectItem value="documents">
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Documents
-                </div>
-              </SelectItem>
-              <SelectItem value="resources">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="w-4 h-4" />
-                  Resources
-                </div>
-              </SelectItem>
-              <SelectItem value="payments">
-                <div className="flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  Payments
-                  {payments.filter(p => p.status === 'pending').length > 0 && (
-                    <span className="ml-1 px-1.5 py-0.5 bg-amber-600 text-white text-xs rounded-full">
-                      {payments.filter(p => p.status === 'pending').length}
-                    </span>
-                  )}
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Overview Tab */}
-          <TabsContent value="overview">
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {calendlySettings?.enabled && calendlySettings?.calendly_url && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl p-6 text-white"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="text-xl font-bold mb-2">Schedule Session</h3>
-                      <p className="text-blue-100">Book your next session</p>
-                    </div>
-                    <Button
-                      asChild
-                      size="lg"
-                      className="bg-white text-blue-600 hover:bg-blue-50"
-                    >
-                      <a href={calendlySettings.calendly_url} target="_blank" rel="noopener noreferrer">
-                        <Calendar className="w-4 h-4 mr-2" />
-                        Book
-                      </a>
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-              
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-gradient-to-r from-violet-500 to-violet-600 rounded-xl p-6 text-white"
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xl font-bold mb-2">Intake Form</h3>
-                    <p className="text-violet-100">Complete your questionnaire</p>
-                  </div>
-                  <Button
-                    asChild
-                    size="lg"
-                    className="bg-white text-violet-600 hover:bg-violet-50"
-                  >
-                    <a href={createPageUrl("CustomIntake")}>
-                      <Sparkles className="w-4 h-4 mr-2" />
-                      Start
-                    </a>
-                  </Button>
-                </div>
-              </motion.div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-xl border border-slate-100 p-6"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Target className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-800">{goals.length}</p>
-                    <p className="text-sm text-slate-500">Active Goals</p>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white rounded-xl border border-slate-100 p-6"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-emerald-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-800">
-                      {sessions.filter(s => s.status === 'completed').length}
-                    </p>
-                    <p className="text-sm text-slate-500">Sessions Completed</p>
-                  </div>
-                </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="bg-white rounded-xl border border-slate-100 p-6"
-              >
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-violet-100 flex items-center justify-center">
-                    <MessageSquare className="w-5 h-5 text-violet-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold text-slate-800">{messages.length}</p>
-                    <p className="text-sm text-slate-500">Messages Exchanged</p>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-4">Your Goals</h3>
-                <PortalGoals 
-                  goals={goals.slice(0, 3)} 
-                  onAddGoal={() => {
-                    setEditingGoal(null);
-                    setShowGoalForm(true);
-                  }}
-                  onEditGoal={(goal) => {
-                    setEditingGoal(goal);
-                    setShowGoalForm(true);
-                  }}
-                />
-              </div>
-              <div>
-                <h3 className="font-semibold text-slate-800 mb-4">Upcoming Sessions</h3>
-                <PortalSessions 
-                  sessions={sessions.filter(s => s.status === 'scheduled').slice(0, 3)} 
-                  onProvideFeedback={setFeedbackSession}
-                  clientId={client.id}
-                  clientName={client.name}
-                />
-              </div>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="goals">
-            <PortalGoals 
-              goals={goals} 
-              onAddGoal={() => {
-                setEditingGoal(null);
-                setShowGoalForm(true);
-              }}
-              onEditGoal={(goal) => {
-                setEditingGoal(goal);
-                setShowGoalForm(true);
-              }}
-            />
-          </TabsContent>
-
-          <TabsContent value="sessions">
-            <PortalSessions 
-              sessions={sessions} 
-              onProvideFeedback={setFeedbackSession}
-              clientId={client.id}
-              clientName={client.name}
-            />
-          </TabsContent>
-
-          <TabsContent value="messages">
-            <PortalMessaging messages={messages} clientId={client.id} currentUser={user} />
-          </TabsContent>
-
-          <TabsContent value="documents">
-            <PortalDocuments documents={documents} clientId={client.id} currentUser={user} />
-          </TabsContent>
-
-          <TabsContent value="resources">
-            <PortalResources resources={resources} clientId={client?.id} />
-          </TabsContent>
-
-          <TabsContent value="payments">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-xl font-semibold text-slate-800 mb-4">Your Payments</h3>
-                <p className="text-slate-600 mb-6">View and pay your coaching invoices</p>
-              </div>
-
-              {payments.length > 0 ? (
-                <div className="space-y-4">
-                  {payments.map((payment, index) => (
-                    <motion.div
-                      key={payment.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                      className="bg-white rounded-xl border border-slate-100 p-6 hover:shadow-md transition-shadow"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                              <CreditCard className="w-5 h-5 text-slate-600" />
-                            </div>
-                            <div>
-                              <h4 className="font-semibold text-slate-800">{payment.description}</h4>
-                              <p className="text-sm text-slate-500">
-                                {new Date(payment.created_date).toLocaleDateString('en-US', { 
-                                  month: 'long', 
-                                  day: 'numeric', 
-                                  year: 'numeric' 
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4 mt-3">
-                            <span className="text-2xl font-bold text-slate-800">
-                              ${payment.amount.toFixed(2)}
-                            </span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              payment.status === 'paid' 
-                                ? 'bg-emerald-100 text-emerald-700' 
-                                : payment.status === 'pending'
-                                ? 'bg-amber-100 text-amber-700'
-                                : 'bg-red-100 text-red-700'
-                            }`}>
-                              {payment.status}
-                            </span>
-                          </div>
-                        </div>
-                        {payment.status === 'pending' && (
-                          <div className="ml-4">
-                            <PaymentButton
-                              clientId={client.id}
-                              amount={payment.amount}
-                              description={payment.description}
-                              type={payment.type}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="bg-white rounded-xl border border-slate-100 p-12 text-center">
-                  <CreditCard className="w-12 h-12 text-slate-200 mx-auto mb-3" />
-                  <p className="text-slate-500">No payments yet</p>
-                </div>
-              )}
-            </div>
-          </TabsContent>
-        </Tabs>
-
-      </div>
-
-      {/* Feedback Form */}
-      <SessionFeedbackForm
-        open={!!feedbackSession}
-        onClose={() => setFeedbackSession(null)}
-        session={feedbackSession}
-        onSubmit={handleFeedbackSubmit}
-        isLoading={feedbackMutation.isPending}
-      />
-
-      {/* Goal Form */}
-      <GoalForm
-        open={showGoalForm}
-        onClose={() => {
-          setShowGoalForm(false);
-          setEditingGoal(null);
-        }}
-        onSubmit={handleGoalSubmit}
-        initialData={editingGoal}
-        clientId={client?.id}
-        isLoading={createGoalMutation.isPending || updateGoalMutation.isPending}
-      />
     </div>
-  );
-}
+
+    {/* Snapshot */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-card border border-border rounded-md p-6">
+        <p className="text-sm text-muted-foreground mb-1">Active Goals</p>
+        <p className="text-2xl font-semibold text-foreground">
+          {goals.length}
+        </p>
+      </div>
+
+      <div className="bg-card border border-border rounded-md p-6">
+        <p className="text-sm text-muted-foreground mb-1">
+          Sessions Completed
+        </p>
+        <p className="text-2xl font-semibold text-foreground">
+          {sessions.filter(s => s.status === "completed").length}
+        </p>
+      </div>
+
+      <div className="bg-card border border-border rounded-md p-6">
+        <p className="text-sm text-muted-foreground mb-1">
+          Messages
+        </p>
+        <p className="text-2xl font-semibold text-foreground">
+          {messages.length}
+        </p>
+      </div>
+    </div>
+
+    {/* Goals + Upcoming */}
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+      <div>
+        <h3 className="text-base font-semibold text-foreground mb-4">
+          Current Goals
+        </h3>
+        <PortalGoals
+          goals={goals.slice(0, 3)}
+          onAddGoal={() => {
+            setEditingGoal(null);
+            setShowGoalForm(true);
+          }}
+          onEditGoal={(goal) => {
+            setEditingGoal(goal);
+            setShowGoalForm(true);
+          }}
+        />
+      </div>
+
+      <div>
+        <h3 className="text-base font-semibold text-foreground mb-4">
+          Upcoming Sessions
+        </h3>
+        <PortalSessions
+          sessions={sessions
+            .filter(s => s.status === "scheduled")
+            .slice(0, 3)}
+          onProvideFeedback={setFeedbackSession}
+          clientId={client.id}
+          clientName={client.name}
+        />
+      </div>
+    </div>
+
+  </div>
+</div>
